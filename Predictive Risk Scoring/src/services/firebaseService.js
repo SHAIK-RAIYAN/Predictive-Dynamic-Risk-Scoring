@@ -479,4 +479,41 @@ class FirebaseService {
 // Create singleton instance
 const firebaseService = new FirebaseService();
 
+// Real-time service for dashboard updates
+const realTimeService = {
+  onDashboardDataChange(callback) {
+    const unsubscribers = [];
+    
+    // Subscribe to users
+    const userUnsubscribe = firebaseService.subscribeToUsers((users) => {
+      callback({ type: 'entities', data: users });
+    });
+    unsubscribers.push(userUnsubscribe);
+    
+    // Subscribe to risk events
+    const eventsUnsubscribe = firebaseService.subscribeToRiskEvents((events) => {
+      callback({ type: 'events', data: events });
+    });
+    unsubscribers.push(eventsUnsubscribe);
+    
+    // Subscribe to analytics
+    const analyticsUnsubscribe = firebaseService.subscribeToAnalytics((analytics) => {
+      callback({ type: 'analytics', data: analytics });
+    });
+    unsubscribers.push(analyticsUnsubscribe);
+    
+    // Subscribe to live monitoring
+    const monitoringUnsubscribe = firebaseService.subscribeToLiveMonitoring((monitoring) => {
+      callback({ type: 'monitoring', data: monitoring });
+    });
+    unsubscribers.push(monitoringUnsubscribe);
+    
+    // Return unsubscribe function
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe());
+    };
+  }
+};
+
+export { realTimeService };
 export default firebaseService;
