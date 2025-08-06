@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Grid,
-  Card,
   CardContent,
   Typography,
   Box,
@@ -18,6 +17,7 @@ import {
   Alert,
   Button,
   CardHeader,
+  useTheme,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -28,6 +28,9 @@ import {
   Visibility,
   Security,
   Speed,
+  Shield,
+  Analytics,
+  MonitorHeart,
 } from "@mui/icons-material";
 import {
   LineChart,
@@ -43,6 +46,17 @@ import {
 } from "recharts";
 import { useQuery } from "react-query";
 import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  StyledCard, 
+  MetricCard, 
+  RiskChip, 
+  LoadingBar, 
+  AnimatedButton,
+  GradientBox,
+  StatusIndicator,
+  withFadeIn
+} from "../../components/UI/index.jsx";
 
 // Mock data - replace with actual API calls
 const mockRiskData = {
@@ -117,6 +131,7 @@ const riskDistributionData = [
 
 const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const theme = useTheme();
 
   // Mock API query - replace with actual API call
   const {
@@ -136,334 +151,446 @@ const Dashboard = () => {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
-    toast.success("Dashboard refreshed successfully");
+    toast.success("Dashboard refreshed successfully", {
+      style: {
+        background: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        border: `1px solid ${theme.palette.divider}`,
+      },
+    });
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return "#f44336";
-    if (score >= 25) return "#ff9800";
-    return "#4caf50";
+    if (score >= 40) return theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
+    if (score >= 25) return theme.palette.mode === 'dark' ? '#bdbdbd' : '#757575';
+    return theme.palette.mode === 'dark' ? '#9e9e9e' : '#424242';
   };
 
   const getRiskStatus = (score) => {
-    if (score >= 40) return "High";
-    if (score >= 25) return "Medium";
+    if (score >= 40) return "Critical";
+    if (score >= 30) return "High";
+    if (score >= 20) return "Medium";
     return "Low";
+  };
+
+  const getRiskLevel = (score) => {
+    if (score >= 40) return "critical";
+    if (score >= 30) return "high";
+    if (score >= 20) return "medium";
+    return "low";
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ width: "100%" }}>
-        <LinearProgress />
+      <Box className="w-full p-8">
+        <LoadingBar className="rounded-lg" />
+        <Typography className="text-center mt-4 text-gray-600 dark:text-gray-400">
+          Loading dashboard data...
+        </Typography>
       </Box>
     );
   }
 
   return (
-    <Box>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="space-y-6"
+    >
       {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}>
-        <Typography variant="h4" component="h1">
-          Risk Assessment Dashboard
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={handleRefresh}
-          disabled={isRefreshing}>
-          Refresh
-        </Button>
-      </Box>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8"
+      >
+        <Box>
+          <Typography 
+            variant="h4" 
+            component="h1"
+            className="font-bold text-black dark:text-white mb-2 tracking-tight"
+          >
+            Risk Assessment Dashboard
+          </Typography>
+          <Typography 
+            variant="body1" 
+            className="text-gray-600 dark:text-gray-400"
+          >
+            Real-time monitoring and predictive risk analysis
+          </Typography>
+        </Box>
+        
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <AnimatedButton
+            variant="outlined"
+            startIcon={<Refresh />}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`${isRefreshing ? 'animate-spin' : ''} bg-white dark:bg-black text-black dark:text-white border-black dark:border-white hover:bg-gray-100 dark:hover:bg-gray-900`}
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </AnimatedButton>
+        </motion.div>
+      </motion.div>
 
       {/* Alert Banner */}
-      <Alert severity="warning" sx={{ mb: 3 }}>
-        <Typography variant="body2">
-          <strong>High Risk Alert:</strong> 3 entities have exceeded risk
-          threshold.
-          <Button size="small" sx={{ ml: 1 }}>
-            View Details
-          </Button>
-        </Typography>
-      </Alert>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Alert 
+          severity="warning" 
+          className="mb-6 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900"
+          sx={{
+            backgroundColor: theme.palette.mode === 'dark' ? '#212121' : '#fafafa',
+            color: theme.palette.text.primary,
+            border: `1px solid ${theme.palette.divider}`,
+            '& .MuiAlert-icon': {
+              color: theme.palette.text.primary,
+            },
+          }}
+        >
+          <Box className="flex items-center justify-between w-full">
+            <Typography variant="body2" className="font-medium">
+              <span className="font-bold">High Risk Alert:</span> 3 entities have exceeded risk threshold.
+            </Typography>
+            <AnimatedButton 
+              size="small" 
+              variant="contained"
+              className="ml-4 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+            >
+              View Details
+            </AnimatedButton>
+          </Box>
+        </Alert>
+      </motion.div>
 
       {/* Key Metrics */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}>
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Overall Risk Score
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    component="div"
-                    sx={{
-                      color: getRiskColor(dashboardData.overallRiskScore),
-                    }}>
-                    {dashboardData.overallRiskScore}
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                    {dashboardData.riskTrend === "increasing" ? (
-                      <TrendingUp sx={{ color: "#f44336", mr: 1 }} />
-                    ) : (
-                      <TrendingDown sx={{ color: "#4caf50", mr: 1 }} />
-                    )}
-                    <Typography variant="body2" color="textSecondary">
-                      {dashboardData.riskTrend === "increasing"
-                        ? "+3.2%"
-                        : "-1.8%"}{" "}
-                      from yesterday
-                    </Typography>
-                  </Box>
-                </Box>
-                <Security sx={{ fontSize: 40, color: "primary.main" }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Grid container spacing={3} className="mb-8">
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Overall Risk Score"
+              value={dashboardData.overallRiskScore}
+              subtitle={`${dashboardData.riskTrend === "increasing" ? "+3.2%" : "-1.8%"} from yesterday`}
+              icon={<Shield className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+              trend={
+                dashboardData.riskTrend === "increasing" ? (
+                  <TrendingUp className="text-red-500 dark:text-red-400" />
+                ) : (
+                  <TrendingDown className="text-green-500 dark:text-green-400" />
+                )
+              }
+              className="card-hover"
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}>
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Total Entities
-                  </Typography>
-                  <Typography variant="h4" component="div">
-                    {dashboardData.totalEntities.toLocaleString()}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mt: 1 }}>
-                    Monitored assets
-                  </Typography>
-                </Box>
-                <Speed sx={{ fontSize: 40, color: "primary.main" }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Total Entities"
+              value={dashboardData.totalEntities.toLocaleString()}
+              subtitle="Monitored assets"
+              icon={<MonitorHeart className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+              className="card-hover"
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}>
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    High Risk Entities
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    component="div"
-                    sx={{ color: "#f44336" }}>
-                    {dashboardData.highRiskEntities}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mt: 1 }}>
-                    Require immediate attention
-                  </Typography>
-                </Box>
-                <Warning sx={{ fontSize: 40, color: "#f44336" }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="High Risk Entities"
+              value={dashboardData.highRiskEntities}
+              subtitle="Require immediate attention"
+              icon={<Warning className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+              className="card-hover"
+            />
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}>
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Recent Alerts
-                  </Typography>
-                  <Typography variant="h4" component="div">
-                    {dashboardData.recentAlerts}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ mt: 1 }}>
-                    Last 24 hours
-                  </Typography>
-                </Box>
-                <CheckCircle sx={{ fontSize: 40, color: "#4caf50" }} />
-              </Box>
-            </CardContent>
-          </Card>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Recent Alerts"
+              value={dashboardData.recentAlerts}
+              subtitle="Last 24 hours"
+              icon={<Analytics className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+              className="card-hover"
+            />
+          </Grid>
         </Grid>
-      </Grid>
+      </motion.div>
 
       {/* Charts and Tables */}
-      <Grid container spacing={3}>
-        {/* Risk Trend Chart */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Risk Score Trend (24 Hours)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={mockTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis domain={[0, 50]} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#2196f3"
-                    strokeWidth={2}
-                    dot={{ fill: "#2196f3", strokeWidth: 2, r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Risk Distribution */}
-        <Grid item xs={12} md={4}>
-          <Card
-            style={{
-              boxShadow: "0 2px 16px rgba(0,0,0,0.08)",
-              borderRadius: 16,
-            }}>
-            <CardHeader
-              title={
-                <Typography variant="h6" gutterBottom>
-                  Risk Distribution
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Grid container spacing={3} className="mb-8">
+          {/* Risk Trend Chart */}
+          <Grid item xs={12} md={8}>
+            <StyledCard variant="hover" className="p-6">
+              <CardContent>
+                <Typography 
+                  variant="h6" 
+                  className="font-semibold text-black dark:text-white mb-6"
+                >
+                  Risk Score Trend (24 Hours)
                 </Typography>
-              }
-            />
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={riskDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}>
-                    {riskDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={mockTrendData}>
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke={theme.palette.mode === 'dark' ? '#424242' : '#e0e0e0'}
+                    />
+                    <XAxis 
+                      dataKey="time" 
+                      stroke={theme.palette.text.secondary}
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      domain={[0, 50]} 
+                      stroke={theme.palette.text.secondary}
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: '8px',
+                        color: theme.palette.text.primary,
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke={theme.palette.mode === 'dark' ? '#ffffff' : '#000000'}
+                      strokeWidth={3}
+                      dot={{ 
+                        fill: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                        strokeWidth: 2, 
+                        r: 5 
+                      }}
+                      activeDot={{ 
+                        r: 7, 
+                        fill: theme.palette.mode === 'dark' ? '#f5f5f5' : '#212121' 
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </StyledCard>
+          </Grid>
 
-        {/* Top Risk Entities */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Top Risk Entities
-              </Typography>
-              <TableContainer
-                component={Paper}
-                sx={{ backgroundColor: "transparent" }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Entity Name</TableCell>
-                      <TableCell>Department</TableCell>
-                      <TableCell>Risk Score</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Last Activity</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {mockTopEntities.map((entity) => (
-                      <TableRow key={entity.id}>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {entity.name}
+          {/* Risk Distribution */}
+          <Grid item xs={12} md={4}>
+            <StyledCard variant="hover" className="p-6">
+              <CardHeader
+                title={
+                  <Typography 
+                    variant="h6" 
+                    className="font-semibold text-black dark:text-white"
+                  >
+                    Risk Distribution
+                  </Typography>
+                }
+              />
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: "Low Risk", 
+                          value: 1068, 
+                          color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#e0e0e0'
+                        },
+                        { 
+                          name: "Medium Risk", 
+                          value: 156, 
+                          color: theme.palette.mode === 'dark' ? '#757575' : '#bdbdbd'
+                        },
+                        { 
+                          name: "High Risk", 
+                          value: 23, 
+                          color: theme.palette.mode === 'dark' ? '#424242' : '#757575'
+                        },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                      labelStyle={{
+                        fill: theme.palette.text.primary,
+                        fontSize: '12px',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {[
+                        { 
+                          name: "Low Risk", 
+                          value: 1068, 
+                          color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#e0e0e0'
+                        },
+                        { 
+                          name: "Medium Risk", 
+                          value: 156, 
+                          color: theme.palette.mode === 'dark' ? '#757575' : '#bdbdbd'
+                        },
+                        { 
+                          name: "High Risk", 
+                          value: 23, 
+                          color: theme.palette.mode === 'dark' ? '#424242' : '#757575'
+                        },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: '8px',
+                        color: theme.palette.text.primary,
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </StyledCard>
+          </Grid>
+        </Grid>
+      </motion.div>
+
+      {/* Top Risk Entities */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <StyledCard variant="hover" className="overflow-hidden">
+          <CardContent className="p-6">
+            <Typography 
+              variant="h6" 
+              className="font-semibold text-black dark:text-white mb-6"
+            >
+              Top Risk Entities
+            </Typography>
+            <TableContainer
+              component={Paper}
+              className="bg-transparent shadow-none"
+              sx={{ 
+                backgroundColor: "transparent",
+                boxShadow: 'none',
+              }}
+            >
+              <Table>
+                <TableHead 
+                  sx={{ 
+                    backgroundColor: theme.palette.mode === 'dark' ? '#212121' : '#fafafa',
+                  }}
+                >
+                  <TableRow>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Entity Name
+                    </TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Department
+                    </TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Risk Score
+                    </TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Status
+                    </TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Last Activity
+                    </TableCell>
+                    <TableCell className="font-semibold text-black dark:text-white">
+                      Actions
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {mockTopEntities.map((entity, index) => (
+                    <motion.tr
+                      key={entity.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 * index, duration: 0.3 }}
+                      component={TableRow}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200"
+                    >
+                      <TableCell>
+                        <Typography 
+                          variant="body2" 
+                          className="font-medium text-black dark:text-white"
+                        >
+                          {entity.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography 
+                          variant="body2" 
+                          className="text-gray-600 dark:text-gray-400"
+                        >
+                          {entity.department}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box className="flex items-center gap-2">
+                          <Typography
+                            variant="body2"
+                            className="font-bold text-black dark:text-white"
+                          >
+                            {entity.riskScore}
                           </Typography>
-                        </TableCell>
-                        <TableCell>{entity.department}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: getRiskColor(entity.riskScore),
-                                mr: 1,
-                              }}>
-                              {entity.riskScore}
-                            </Typography>
-                            <Chip
-                              label={getRiskStatus(entity.riskScore)}
-                              size="small"
-                              sx={{
-                                backgroundColor: getRiskColor(entity.riskScore),
-                                color: "white",
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={entity.status}
-                            size="small"
-                            color={
-                              entity.status === "high" ? "error" : "warning"
-                            }
+                          <RiskChip 
+                            level={getRiskLevel(entity.riskScore)} 
+                            score={entity.riskScore}
                           />
-                        </TableCell>
-                        <TableCell>{entity.lastActivity}</TableCell>
-                        <TableCell>
-                          <IconButton size="small">
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <StatusIndicator status={entity.status} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Typography 
+                          variant="body2" 
+                          className="text-gray-600 dark:text-gray-400"
+                        >
+                          {entity.lastActivity}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <IconButton 
+                            size="small"
+                            className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                          >
                             <Visibility />
                           </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+                        </motion.div>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </StyledCard>
+      </motion.div>
+    </motion.div>
   );
 };
 
