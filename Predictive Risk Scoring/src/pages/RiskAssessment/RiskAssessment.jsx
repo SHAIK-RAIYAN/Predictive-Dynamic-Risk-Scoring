@@ -74,13 +74,27 @@ const RiskAssessment = () => {
     }
   );
 
-  const handleAssessRisk = () => {
+  const handleAssessRisk = async () => {
     if (!entityId.trim()) {
       toast.error('Please enter an entity ID');
       return;
     }
-    setIsAssessing(true);
-    assessRiskMutation.mutate(entityId);
+
+    try {
+      // First check if entity exists in database
+      const entities = await apiService.getAllEntities();
+      const entityExists = entities.some(entity => entity.id === entityId.trim());
+      
+      if (!entityExists) {
+        toast.error('Entity ID not found in database. Please enter a valid entity ID.');
+        return;
+      }
+
+      setIsAssessing(true);
+      assessRiskMutation.mutate(entityId);
+    } catch (error) {
+      toast.error('Failed to validate entity ID');
+    }
   };
 
   const getRiskColor = (score) => {

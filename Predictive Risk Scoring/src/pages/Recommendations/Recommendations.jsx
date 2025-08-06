@@ -71,27 +71,24 @@ const Recommendations = () => {
     }
   );
 
-  const implementMutation = useMutation(
-    (data) => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, message: 'Recommendation implemented successfully' });
-      }, 2000);
-    }),
+  const askAIMutation = useMutation(
+    async (recommendation) => {
+      // Simulate AI response
+      const aiResponse = await apiService.getAIRecommendations('demo-entity', {
+        overallScore: 35,
+        riskLevel: 'High',
+        factors: recommendation.factors || []
+      });
+      return aiResponse;
+    },
     {
-      onSuccess: () => {
-        toast.success('Recommendation implementation started');
+      onSuccess: (aiResponse) => {
+        toast.success('AI recommendations generated successfully');
+        setSelectedRecommendation({ ...selectedRecommendation, aiResponse });
         setImplementationDialogOpen(false);
-        setImplementationData({
-          title: '',
-          description: '',
-          priority: 'Medium',
-          effort: 'Medium',
-          timeline: '1 week',
-          assignee: '',
-        });
       },
       onError: () => {
-        toast.error('Failed to implement recommendation');
+        toast.error('Failed to get AI recommendations');
       },
     }
   );
@@ -139,17 +136,10 @@ const Recommendations = () => {
     }
   };
 
-  const handleImplement = (recommendation) => {
+  const handleAskAI = (recommendation) => {
     setSelectedRecommendation(recommendation);
-    setImplementationData({
-      title: recommendation.title,
-      description: recommendation.description,
-      priority: recommendation.priority,
-      effort: recommendation.effort,
-      timeline: '1 week',
-      assignee: '',
-    });
     setImplementationDialogOpen(true);
+    askAIMutation.mutate(recommendation);
   };
 
   const handleSchedule = (recommendation) => {
@@ -351,12 +341,12 @@ const Recommendations = () => {
                       <Button
                         size="small"
                         variant="contained"
-                        startIcon={<PlayArrow />}
-                        onClick={() => handleImplement(recommendation)}
-                        disabled={recommendation.status === 'Completed'}
+                        startIcon={<Lightbulb />}
+                        onClick={() => handleAskAI(recommendation)}
+                        disabled={askAIMutation.isLoading}
                         className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
                       >
-                        Implement
+                        {askAIMutation.isLoading ? 'Asking AI...' : 'Ask AI'}
                       </Button>
                       <Button
                         size="small"
@@ -391,9 +381,9 @@ const Recommendations = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle className="flex justify-between items-center">
+                <DialogTitle className="flex justify-between items-center">
           <Typography variant="h6" className="font-semibold">
-            Implement Recommendation
+            AI Recommendations
           </Typography>
           <IconButton onClick={() => setImplementationDialogOpen(false)}>
             <Close />
@@ -401,74 +391,57 @@ const Recommendations = () => {
         </DialogTitle>
         <DialogContent>
           <Box className="space-y-4">
-            <TextField
-              fullWidth
-              label="Title"
-              value={implementationData.title}
-              onChange={(e) => setImplementationData({...implementationData, title: e.target.value})}
-            />
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Description"
-              value={implementationData.description}
-              onChange={(e) => setImplementationData({...implementationData, description: e.target.value})}
-            />
-            <Box className="grid grid-cols-2 gap-4">
-              <FormControl fullWidth>
-                <InputLabel>Priority</InputLabel>
-                <Select
-                  value={implementationData.priority}
-                  onChange={(e) => setImplementationData({...implementationData, priority: e.target.value})}
-                  label="Priority"
-                >
-                  <MenuItem value="High">High</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="Low">Low</MenuItem>
-                </Select>
-              </FormControl>
-              <FormControl fullWidth>
-                <InputLabel>Effort</InputLabel>
-                <Select
-                  value={implementationData.effort}
-                  onChange={(e) => setImplementationData({...implementationData, effort: e.target.value})}
-                  label="Effort"
-                >
-                  <MenuItem value="Low">Low</MenuItem>
-                  <MenuItem value="Medium">Medium</MenuItem>
-                  <MenuItem value="High">High</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box className="grid grid-cols-2 gap-4">
-              <TextField
-                fullWidth
-                label="Timeline"
-                value={implementationData.timeline}
-                onChange={(e) => setImplementationData({...implementationData, timeline: e.target.value})}
-              />
-              <TextField
-                fullWidth
-                label="Assignee"
-                value={implementationData.assignee}
-                onChange={(e) => setImplementationData({...implementationData, assignee: e.target.value})}
-              />
-            </Box>
+            {askAIMutation.isLoading ? (
+              <Box className="text-center py-8">
+                <CircularProgress size={60} />
+                <Typography variant="h6" className="mt-4 text-gray-600 dark:text-gray-400">
+                  Getting AI recommendations...
+                </Typography>
+              </Box>
+            ) : selectedRecommendation?.aiResponse ? (
+              <Box className="space-y-4">
+                <Typography variant="h6" className="font-semibold">
+                  AI Recommendations for: {selectedRecommendation.title}
+                </Typography>
+                {Array.isArray(selectedRecommendation.aiResponse) ? (
+                  selectedRecommendation.aiResponse.map((rec, index) => (
+                    <Card key={index} className="p-4">
+                      <Typography variant="subtitle1" className="font-semibold mb-2">
+                        {rec.title || `Recommendation ${index + 1}`}
+                      </Typography>
+                      <Typography variant="body2" className="mb-2">
+                        {rec.description || rec}
+                      </Typography>
+                      <Box className="flex gap-2">
+                        <Chip 
+                          label={rec.priority || 'Medium'} 
+                          color={getPriorityColor(rec.priority || 'Medium')}
+                          size="small"
+                        />
+                        <Chip 
+                          label={rec.effort || 'Medium'} 
+                          color="default"
+                          size="small"
+                        />
+                      </Box>
+                    </Card>
+                  ))
+                ) : (
+                  <Typography variant="body1">
+                    {selectedRecommendation.aiResponse}
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Typography variant="body1" className="text-center py-8">
+                No AI recommendations available
+              </Typography>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setImplementationDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleImplementationSubmit}
-            disabled={implementMutation.isLoading}
-            startIcon={implementMutation.isLoading ? <CircularProgress size={20} /> : <PlayArrow />}
-            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-          >
-            {implementMutation.isLoading ? 'Implementing...' : 'Start Implementation'}
+            Close
           </Button>
         </DialogActions>
       </Dialog>

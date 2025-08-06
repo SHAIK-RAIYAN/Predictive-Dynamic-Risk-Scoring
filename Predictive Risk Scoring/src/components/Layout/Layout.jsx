@@ -27,7 +27,6 @@ import {
   Lightbulb as LightbulbIcon,
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
-  Notifications as NotificationsIcon,
   AccountCircle,
   ExitToApp,
   Brightness4,
@@ -266,27 +265,7 @@ const Layout = ({ children }) => {
                 />
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <IconButton 
-                  className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                  sx={{ color: 'text.primary' }}
-                >
-                  <Badge 
-                    badgeContent={4} 
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                        color: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
-                      }
-                    }}
-                  >
-                    <NotificationsIcon />
-                  </Badge>
-                </IconButton>
-              </motion.div>
+
 
               <motion.div
                 whileHover={{ scale: 1.1 }}

@@ -209,46 +209,14 @@ const LiveMonitoring = () => {
               </Grid>
             </Grid>
 
-            {/* Recent High-Risk Events */}
+            {/* Monitoring Status */}
             <Typography variant="h6" gutterBottom>
-              Recent High-Risk Events
+              Monitoring Status
             </Typography>
-            <Box maxHeight={200} overflow="auto">
-              {events
-                .filter(event => event.severity === 'HIGH')
-                .slice(0, 5)
-                .map((event) => (
-                  <Box
-                    key={event.id}
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    p={1}
-                    mb={1}
-                    border={1}
-                    borderColor="divider"
-                    borderRadius={1}
-                  >
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {event.description}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={event.severity}
-                      color={getSeverityColor(event.severity)}
-                      size="small"
-                    />
-                  </Box>
-                ))}
-              {events.filter(event => event.severity === 'HIGH').length === 0 && (
-                <Typography variant="body2" color="text.secondary" textAlign="center">
-                  No high-risk events in the last hour
-                </Typography>
-              )}
+            <Box>
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                Live monitoring is active and collecting real-time data
+              </Typography>
             </Box>
 
             {/* User Risk Distribution */}

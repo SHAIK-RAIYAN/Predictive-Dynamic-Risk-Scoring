@@ -44,6 +44,14 @@ const EntityManagement = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [addEntityDialogOpen, setAddEntityDialogOpen] = useState(false);
+  const [newEntity, setNewEntity] = useState({
+    name: '',
+    type: 'User',
+    department: '',
+    email: '',
+    ipAddress: '',
+  });
 
   const { data: entities, isLoading, error } = useQuery(
     'entities',
@@ -92,6 +100,45 @@ const EntityManagement = () => {
     }
     toast.success(`${action} action performed on ${selectedRows.length} entities`);
     setSelectedRows([]);
+  };
+
+  const handleAddEntity = async () => {
+    try {
+      if (!newEntity.name.trim()) {
+        toast.error('Please enter entity name');
+        return;
+      }
+
+      // Generate a unique ID for the entity
+      const entityId = newEntity.name.toLowerCase().replace(/\s+/g, '-');
+      
+      const entityData = {
+        id: entityId,
+        name: newEntity.name,
+        type: newEntity.type,
+        department: newEntity.department,
+        email: newEntity.email,
+        ipAddress: newEntity.ipAddress,
+        riskScore: Math.floor(Math.random() * 30) + 10, // Random risk score between 10-40
+        status: 'Active',
+        lastActivity: 'Just now',
+      };
+
+      // Add to Firebase (this would be a real API call)
+      console.log('Adding entity:', entityData);
+      
+      toast.success('Entity added successfully!');
+      setAddEntityDialogOpen(false);
+      setNewEntity({
+        name: '',
+        type: 'User',
+        department: '',
+        email: '',
+        ipAddress: '',
+      });
+    } catch (error) {
+      toast.error('Failed to add entity');
+    }
   };
 
   const columns = [
@@ -257,6 +304,22 @@ const EntityManagement = () => {
               <Button
                 variant="contained"
                 startIcon={<Add />}
+                onClick={() => setAddEntityDialogOpen(true)}
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+              >
+                Add Entity
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </motion.div>
+                    <MenuItem key={status} value={status}>{status}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
                 className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
               >
                 Add Entity
@@ -412,6 +475,84 @@ const EntityManagement = () => {
         <DialogActions>
           <Button onClick={() => setDetailsDialogOpen(false)}>
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Entity Dialog */}
+      <Dialog 
+        open={addEntityDialogOpen} 
+        onClose={() => setAddEntityDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Add New Entity
+          </Typography>
+          <IconButton onClick={() => setAddEntityDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4 mt-2">
+            <TextField
+              fullWidth
+              label="Entity Name"
+              variant="outlined"
+              value={newEntity.name}
+              onChange={(e) => setNewEntity({...newEntity, name: e.target.value})}
+              placeholder="Enter entity name"
+            />
+            <FormControl fullWidth>
+              <InputLabel>Entity Type</InputLabel>
+              <Select
+                value={newEntity.type}
+                onChange={(e) => setNewEntity({...newEntity, type: e.target.value})}
+                label="Entity Type"
+              >
+                <MenuItem value="User">User</MenuItem>
+                <MenuItem value="Server">Server</MenuItem>
+                <MenuItem value="Database">Database</MenuItem>
+                <MenuItem value="Application">Application</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Department"
+              variant="outlined"
+              value={newEntity.department}
+              onChange={(e) => setNewEntity({...newEntity, department: e.target.value})}
+              placeholder="Enter department"
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              variant="outlined"
+              value={newEntity.email}
+              onChange={(e) => setNewEntity({...newEntity, email: e.target.value})}
+              placeholder="Enter email address"
+            />
+            <TextField
+              fullWidth
+              label="IP Address"
+              variant="outlined"
+              value={newEntity.ipAddress}
+              onChange={(e) => setNewEntity({...newEntity, ipAddress: e.target.value})}
+              placeholder="Enter IP address"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddEntityDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained"
+            onClick={handleAddEntity}
+            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          >
+            Add Entity
           </Button>
         </DialogActions>
       </Dialog>
