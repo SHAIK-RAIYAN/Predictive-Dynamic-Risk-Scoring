@@ -18,6 +18,10 @@ import {
   Button,
   CardHeader,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -31,6 +35,7 @@ import {
   Shield,
   Analytics,
   MonitorHeart,
+  Close,
 } from "@mui/icons-material";
 import {
   LineChart,
@@ -58,107 +63,87 @@ import {
   withFadeIn
 } from "../../components/UI/index.jsx";
 import LiveMonitoring from "../../components/LiveMonitoring/LiveMonitoring";
-
-// Mock data - replace with actual API calls
-const mockRiskData = {
-  overallRiskScore: 28,
-  riskTrend: "increasing",
-  totalEntities: 1247,
-  highRiskEntities: 23,
-  mediumRiskEntities: 156,
-  lowRiskEntities: 1068,
-  recentAlerts: 12,
-  falsePositives: 2,
-};
-
-const mockTrendData = [
-  { time: "00:00", score: 25 },
-  { time: "04:00", score: 27 },
-  { time: "08:00", score: 30 },
-  { time: "12:00", score: 28 },
-  { time: "16:00", score: 32 },
-  { time: "20:00", score: 29 },
-  { time: "24:00", score: 28 },
-];
-
-const mockTopEntities = [
-  {
-    id: 1,
-    name: "user-john.doe",
-    department: "Engineering",
-    riskScore: 45,
-    status: "high",
-    lastActivity: "2 min ago",
-  },
-  {
-    id: 2,
-    name: "server-prod-01",
-    department: "Infrastructure",
-    riskScore: 38,
-    status: "medium",
-    lastActivity: "5 min ago",
-  },
-  {
-    id: 3,
-    name: "user-sarah.smith",
-    department: "Finance",
-    riskScore: 42,
-    status: "high",
-    lastActivity: "8 min ago",
-  },
-  {
-    id: 4,
-    name: "database-main",
-    department: "IT",
-    riskScore: 35,
-    status: "medium",
-    lastActivity: "12 min ago",
-  },
-  {
-    id: 5,
-    name: "user-mike.wilson",
-    department: "HR",
-    riskScore: 31,
-    status: "medium",
-    lastActivity: "15 min ago",
-  },
-];
-
-const riskDistributionData = [
-  { name: "Low Risk", value: 1068, color: "#4caf50" },
-  { name: "Medium Risk", value: 156, color: "#ff9800" },
-  { name: "High Risk", value: 23, color: "#f44336" },
-];
+import apiService from "../../services/apiService";
 
 const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const theme = useTheme();
 
-  // Mock API query - replace with actual API call
+  // Real API queries
   const {
     data: dashboardData,
-    isLoading,
-    refetch,
+    isLoading: dashboardLoading,
+    refetch: refetchDashboard,
   } = useQuery(
-    "dashboardData",
-    () =>
-      new Promise((resolve) => setTimeout(() => resolve(mockRiskData), 1000)),
+    "dashboardStats",
+    () => apiService.getDashboardStats(),
     {
       refetchInterval: 30000, // Refresh every 30 seconds
     }
   );
 
+  const {
+    data: trendData,
+    isLoading: trendLoading,
+  } = useQuery(
+    "riskTrend",
+    () => apiService.getRiskTrend(),
+    {
+      refetchInterval: 60000, // Refresh every minute
+    }
+  );
+
+  const {
+    data: topEntities,
+    isLoading: entitiesLoading,
+  } = useQuery(
+    "topEntities",
+    () => apiService.getTopRiskEntities(),
+    {
+      refetchInterval: 45000, // Refresh every 45 seconds
+    }
+  );
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refetch();
-    setIsRefreshing(false);
-    toast.success("Dashboard refreshed successfully", {
-      style: {
-        background: theme.palette.background.paper,
-        color: theme.palette.text.primary,
-        border: `1px solid ${theme.palette.divider}`,
-      },
-    });
+    try {
+      await refetchDashboard();
+      toast.success("Dashboard refreshed successfully", {
+        style: {
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
+        },
+      });
+    } catch (error) {
+      toast.error("Failed to refresh dashboard", {
+        style: {
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
+        },
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleViewDetails = async (entity) => {
+    try {
+      const assessment = await apiService.assessEntityRisk(entity.name);
+      setSelectedEntity({ ...entity, assessment });
+      setDetailsDialogOpen(true);
+    } catch (error) {
+      toast.error("Failed to load entity details", {
+        style: {
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
+        },
+      });
+    }
   };
 
   const getRiskColor = (score) => {
@@ -187,7 +172,7 @@ const Dashboard = () => {
     return "low";
   };
 
-  if (isLoading) {
+  if (dashboardLoading || trendLoading || entitiesLoading) {
     return (
       <Box className="w-full p-8">
         <LoadingBar className="rounded-lg" />
@@ -197,6 +182,12 @@ const Dashboard = () => {
       </Box>
     );
   }
+
+  const riskDistributionData = dashboardData ? [
+    { name: "Low Risk", value: dashboardData.lowRiskEntities, color: "#10b981" },
+    { name: "Medium Risk", value: dashboardData.mediumRiskEntities, color: "#f59e0b" },
+    { name: "High Risk", value: dashboardData.highRiskEntities, color: "#ef4444" },
+  ] : [];
 
   return (
     <motion.div
@@ -264,7 +255,7 @@ const Dashboard = () => {
         >
           <Box className="flex items-center justify-between w-full">
             <Typography variant="body2" className="font-medium">
-              <span className="font-bold">High Risk Alert:</span> 3 entities have exceeded risk threshold.
+              <span className="font-bold">High Risk Alert:</span> {dashboardData?.highRiskEntities || 0} entities have exceeded risk threshold.
             </Typography>
             <AnimatedButton 
               size="small" 
@@ -287,11 +278,11 @@ const Dashboard = () => {
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="Overall Risk Score"
-              value={dashboardData.overallRiskScore}
-              subtitle={`${dashboardData.riskTrend === "increasing" ? "+3.2%" : "-1.8%"} from yesterday`}
+              value={dashboardData?.overallRiskScore || 0}
+              subtitle={`${dashboardData?.riskTrend === "increasing" ? "+3.2%" : "-1.8%"} from yesterday`}
               icon={<Shield className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
               trend={
-                dashboardData.riskTrend === "increasing" ? (
+                dashboardData?.riskTrend === "increasing" ? (
                   <TrendingUp className="text-red-500" />
                 ) : (
                   <TrendingDown className="text-green-500" />
@@ -304,7 +295,7 @@ const Dashboard = () => {
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="Total Entities"
-              value={dashboardData.totalEntities.toLocaleString()}
+              value={(dashboardData?.totalEntities || 0).toLocaleString()}
               subtitle="Monitored assets"
               icon={<MonitorHeart className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
               className="card-hover"
@@ -314,7 +305,7 @@ const Dashboard = () => {
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="High Risk Entities"
-              value={dashboardData.highRiskEntities}
+              value={dashboardData?.highRiskEntities || 0}
               subtitle="Require immediate attention"
               icon={<Warning className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
               className="card-hover"
@@ -324,7 +315,7 @@ const Dashboard = () => {
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="Recent Alerts"
-              value={dashboardData.recentAlerts}
+              value={dashboardData?.recentAlerts || 0}
               subtitle="Last 24 hours"
               icon={<Analytics className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
               className="card-hover"
@@ -351,7 +342,7 @@ const Dashboard = () => {
                   Risk Score Trend (24 Hours)
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={mockTrendData}>
+                  <LineChart data={trendData || []}>
                     <CartesianGrid 
                       strokeDasharray="3 3" 
                       stroke={theme.palette.mode === 'dark' ? '#424242' : '#e0e0e0'}
@@ -428,23 +419,7 @@ const Dashboard = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={[
-                        { 
-                          name: "Low Risk", 
-                          value: 1068, 
-                          color: "#10b981"
-                        },
-                        { 
-                          name: "Medium Risk", 
-                          value: 156, 
-                          color: "#f59e0b"
-                        },
-                        { 
-                          name: "High Risk", 
-                          value: 23, 
-                          color: "#ef4444"
-                        },
-                      ]}
+                      data={riskDistributionData}
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
@@ -456,23 +431,7 @@ const Dashboard = () => {
                         fontWeight: 500,
                       }}
                     >
-                      {[
-                        { 
-                          name: "Low Risk", 
-                          value: 1068, 
-                          color: "#10b981"
-                        },
-                        { 
-                          name: "Medium Risk", 
-                          value: 156, 
-                          color: "#f59e0b"
-                        },
-                        { 
-                          name: "High Risk", 
-                          value: 23, 
-                          color: "#ef4444"
-                        },
-                      ].map((entry, index) => (
+                      {riskDistributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -542,7 +501,7 @@ const Dashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {mockTopEntities.map((entity, index) => (
+                  {topEntities?.map((entity, index) => (
                     <motion.tr
                       key={entity.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -599,6 +558,7 @@ const Dashboard = () => {
                         >
                           <IconButton 
                             size="small"
+                            onClick={() => handleViewDetails(entity)}
                             className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                           >
                             <Visibility />
@@ -613,6 +573,88 @@ const Dashboard = () => {
           </CardContent>
         </StyledCard>
       </motion.div>
+
+      {/* Entity Details Dialog */}
+      <Dialog 
+        open={detailsDialogOpen} 
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Entity Details: {selectedEntity?.name}
+          </Typography>
+          <IconButton onClick={() => setDetailsDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {selectedEntity?.assessment && (
+            <Box className="space-y-4">
+              <Box className="grid grid-cols-2 gap-4">
+                <Box>
+                  <Typography variant="subtitle1" className="font-semibold mb-2">
+                    Risk Assessment
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Risk Score:</strong> {selectedEntity.assessment.overallScore}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Risk Level:</strong> {selectedEntity.assessment.riskLevel}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Department:</strong> {selectedEntity.department}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" className="font-semibold mb-2">
+                    Recent Activity
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Last Activity:</strong> {selectedEntity.lastActivity}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Status:</strong> {selectedEntity.status}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Box>
+                <Typography variant="subtitle1" className="font-semibold mb-2">
+                  Risk Factors
+                </Typography>
+                {selectedEntity.assessment.factors?.map((factor, index) => (
+                  <Box key={index} className="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <Typography variant="body2" className="font-medium">
+                      {factor.name}
+                    </Typography>
+                    <Typography variant="caption" className="text-gray-600 dark:text-gray-400">
+                      {factor.description}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle1" className="font-semibold mb-2">
+                  Recommendations
+                </Typography>
+                {selectedEntity.assessment.recommendations?.map((rec, index) => (
+                  <Typography key={index} variant="body2" className="mb-1">
+                    • {rec}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </motion.div>
   );
 };

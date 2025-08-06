@@ -10,436 +10,587 @@ import {
   TextField,
   Button,
   Divider,
+  Alert,
+  Chip,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
-  Alert,
-  Slider,
+  ListItemSecondaryAction,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Chip,
+  Slider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
   Security,
   Notifications,
-  DataUsage,
-  Tune,
-  Save,
+  Storage,
+  Speed,
   Refresh,
-  Warning,
+  Save,
+  Close,
+  Edit,
+  Delete,
+  Add,
   CheckCircle,
+  Warning,
+  Error,
 } from '@mui/icons-material';
-import { useQuery, useMutation } from 'react-query';
+import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import UserProfile from '../../components/UserProfile/UserProfile';
-
-// Mock settings data
-const mockSettings = {
-  riskScoring: {
-    enabled: true,
-    updateInterval: 30,
-    thresholdHigh: 40,
-    thresholdMedium: 25,
-    autoRefresh: true,
-    mlModel: 'isolation_forest',
-  },
-  notifications: {
-    emailAlerts: true,
-    slackIntegration: false,
-    highRiskThreshold: 35,
-    dailyDigest: true,
-    realTimeAlerts: true,
-  },
-  system: {
-    dataRetention: 90,
-    backupEnabled: true,
-    autoScaling: true,
-    performanceMode: 'balanced',
-  },
-  integrations: {
-    siemEnabled: true,
-    siemEndpoint: 'https://siem.company.com/api',
-    ldapEnabled: true,
-    ldapServer: 'ldap://ldap.company.com',
-    apiEnabled: true,
-    apiKey: 'sk-************************',
-  },
-};
 
 const Settings = () => {
-  const [settings, setSettings] = useState(mockSettings);
-  const [hasChanges, setHasChanges] = useState(false);
+  const [settings, setSettings] = useState({
+    // General Settings
+    autoRefresh: true,
+    refreshInterval: 30,
+    darkMode: false,
+    notifications: true,
+    
+    // Security Settings
+    riskThreshold: 35,
+    alertLevel: 'medium',
+    autoBlock: false,
+    mfaRequired: true,
+    
+    // ML Settings
+    mlEnabled: true,
+    modelRetrainInterval: 24,
+    anomalyDetection: true,
+    predictiveScoring: true,
+    
+    // System Settings
+    dataRetention: 90,
+    logLevel: 'info',
+    backupEnabled: true,
+    performanceMode: 'balanced',
+  });
 
-  const { data: currentSettings, isLoading } = useQuery(
-    'settings',
-    () => new Promise((resolve) => setTimeout(() => resolve(mockSettings), 1000))
-  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSetting, setEditingSetting] = useState(null);
 
-  const saveSettingsMutation = useMutation(
-    (newSettings) => new Promise((resolve) => {
-      setTimeout(() => {
-        console.log('Saving settings:', newSettings);
-        resolve({ success: true });
-      }, 2000);
-    }),
-    {
-      onSuccess: () => {
-        toast.success('Settings saved successfully');
-        setHasChanges(false);
-      },
-      onError: () => {
-        toast.error('Failed to save settings');
-      },
-    }
-  );
-
-  const handleSettingChange = (section, key, value) => {
+  const handleSettingChange = (key, value) => {
     setSettings(prev => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value,
-      },
+      [key]: value
     }));
-    setHasChanges(true);
   };
 
-  const handleSave = () => {
-    saveSettingsMutation.mutate(settings);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleReset = () => {
-    setSettings(currentSettings);
-    setHasChanges(false);
-    toast.success('Settings reset to defaults');
+  const handleEditSetting = (setting) => {
+    setEditingSetting(setting);
+    setEditDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <Box sx={{ width: '100%' }}>
-        <Typography>Loading settings...</Typography>
-      </Box>
-    );
-  }
+  const getPerformanceColor = (mode) => {
+    switch (mode) {
+      case 'high': return '#ef4444';
+      case 'balanced': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
+
+  const getLogLevelColor = (level) => {
+    switch (level) {
+      case 'error': return '#ef4444';
+      case 'warn': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      case 'debug': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
 
   return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        System Settings
-      </Typography>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <Typography 
+          variant="h4" 
+          component="h1"
+          className="font-bold text-black dark:text-white mb-2 tracking-tight"
+        >
+          System Settings
+        </Typography>
+        <Typography 
+          variant="body1" 
+          className="text-gray-600 dark:text-gray-400"
+        >
+          Configure system preferences and security parameters
+        </Typography>
+      </motion.div>
 
-      {hasChanges && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
-          You have unsaved changes. Please save your settings to apply changes.
-        </Alert>
-      )}
-
-      <Grid container spacing={3}>
-        {/* User Profile */}
-        <Grid item xs={12} md={4}>
-          <UserProfile />
-        </Grid>
-
-        {/* Risk Scoring Configuration */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Security sx={{ mr: 1 }} />
-                <Typography variant="h6">Risk Scoring</Typography>
-              </Box>
+      {/* General Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Card>
+          <CardContent>
+            <Box className="flex items-center gap-2 mb-4">
+              <SettingsIcon className="text-black dark:text-white" />
+              <Typography variant="h6" className="font-semibold text-black dark:text-white">
+                General Settings
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.autoRefresh}
+                      onChange={(e) => handleSettingChange('autoRefresh', e.target.checked)}
+                    />
+                  }
+                  label="Auto Refresh Dashboard"
+                />
+                <Typography variant="caption" className="text-gray-600 dark:text-gray-400 block mt-1">
+                  Automatically refresh dashboard data
+                </Typography>
+              </Grid>
               
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.riskScoring.enabled}
-                    onChange={(e) => handleSettingChange('riskScoring', 'enabled', e.target.checked)}
-                  />
-                }
-                label="Enable Risk Scoring"
-              />
-
-              <Box sx={{ mt: 2 }}>
-                <Typography gutterBottom>Update Interval (seconds)</Typography>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" className="mb-2">
+                  Refresh Interval (seconds)
+                </Typography>
                 <Slider
-                  value={settings.riskScoring.updateInterval}
-                  onChange={(e, value) => handleSettingChange('riskScoring', 'updateInterval', value)}
+                  value={settings.refreshInterval}
+                  onChange={(e, value) => handleSettingChange('refreshInterval', value)}
                   min={10}
-                  max={300}
+                  max={60}
                   marks={[
                     { value: 10, label: '10s' },
-                    { value: 60, label: '1m' },
-                    { value: 300, label: '5m' },
+                    { value: 30, label: '30s' },
+                    { value: 60, label: '60s' },
                   ]}
-                  valueLabelDisplay="auto"
                 />
-              </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.darkMode}
+                      onChange={(e) => handleSettingChange('darkMode', e.target.checked)}
+                    />
+                  }
+                  label="Dark Mode"
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.notifications}
+                      onChange={(e) => handleSettingChange('notifications', e.target.checked)}
+                    />
+                  }
+                  label="Push Notifications"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-              <Box sx={{ mt: 2 }}>
-                <Typography gutterBottom>High Risk Threshold</Typography>
+      {/* Security Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card>
+          <CardContent>
+            <Box className="flex items-center gap-2 mb-4">
+              <Security className="text-black dark:text-white" />
+              <Typography variant="h6" className="font-semibold text-black dark:text-white">
+                Security Settings
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" className="mb-2">
+                  Risk Threshold: {settings.riskThreshold}
+                </Typography>
                 <Slider
-                  value={settings.riskScoring.thresholdHigh}
-                  onChange={(e, value) => handleSettingChange('riskScoring', 'thresholdHigh', value)}
-                  min={30}
+                  value={settings.riskThreshold}
+                  onChange={(e, value) => handleSettingChange('riskThreshold', value)}
+                  min={20}
                   max={50}
-                  valueLabelDisplay="auto"
+                  marks={[
+                    { value: 20, label: '20' },
+                    { value: 35, label: '35' },
+                    { value: 50, label: '50' },
+                  ]}
                 />
-              </Box>
-
-              <Box sx={{ mt: 2 }}>
-                <Typography gutterBottom>Medium Risk Threshold</Typography>
-                <Slider
-                  value={settings.riskScoring.thresholdMedium}
-                  onChange={(e, value) => handleSettingChange('riskScoring', 'thresholdMedium', value)}
-                  min={15}
-                  max={35}
-                  valueLabelDisplay="auto"
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Alert Level</InputLabel>
+                  <Select
+                    value={settings.alertLevel}
+                    onChange={(e) => handleSettingChange('alertLevel', e.target.value)}
+                    label="Alert Level"
+                  >
+                    <MenuItem value="low">Low</MenuItem>
+                    <MenuItem value="medium">Medium</MenuItem>
+                    <MenuItem value="high">High</MenuItem>
+                    <MenuItem value="critical">Critical</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.autoBlock}
+                      onChange={(e) => handleSettingChange('autoBlock', e.target.checked)}
+                    />
+                  }
+                  label="Auto Block High Risk Entities"
                 />
-              </Box>
-
-              <FormControl fullWidth sx={{ mt: 2 }}>
-                <InputLabel>ML Model</InputLabel>
-                <Select
-                  value={settings.riskScoring.mlModel}
-                  onChange={(e) => handleSettingChange('riskScoring', 'mlModel', e.target.value)}
-                  label="ML Model"
-                >
-                  <MenuItem value="isolation_forest">Isolation Forest</MenuItem>
-                  <MenuItem value="random_forest">Random Forest</MenuItem>
-                  <MenuItem value="autoencoder">Autoencoder</MenuItem>
-                </Select>
-              </FormControl>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Notifications */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Notifications sx={{ mr: 1 }} />
-                <Typography variant="h6">Notifications</Typography>
-              </Box>
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.emailAlerts}
-                    onChange={(e) => handleSettingChange('notifications', 'emailAlerts', e.target.checked)}
-                  />
-                }
-                label="Email Alerts"
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.slackIntegration}
-                    onChange={(e) => handleSettingChange('notifications', 'slackIntegration', e.target.checked)}
-                  />
-                }
-                label="Slack Integration"
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.dailyDigest}
-                    onChange={(e) => handleSettingChange('notifications', 'dailyDigest', e.target.checked)}
-                  />
-                }
-                label="Daily Digest"
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.notifications.realTimeAlerts}
-                    onChange={(e) => handleSettingChange('notifications', 'realTimeAlerts', e.target.checked)}
-                  />
-                }
-                label="Real-time Alerts"
-              />
-
-              <Box sx={{ mt: 2 }}>
-                <Typography gutterBottom>High Risk Alert Threshold</Typography>
-                <Slider
-                  value={settings.notifications.highRiskThreshold}
-                  onChange={(e, value) => handleSettingChange('notifications', 'highRiskThreshold', value)}
-                  min={25}
-                  max={45}
-                  valueLabelDisplay="auto"
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.mfaRequired}
+                      onChange={(e) => handleSettingChange('mfaRequired', e.target.checked)}
+                    />
+                  }
+                  label="Require MFA for Admin Access"
                 />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-        {/* System Configuration */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Tune sx={{ mr: 1 }} />
-                <Typography variant="h6">System</Typography>
-              </Box>
-
-              <Box sx={{ mt: 2 }}>
-                <Typography gutterBottom>Data Retention (days)</Typography>
+      {/* ML Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Card>
+          <CardContent>
+            <Box className="flex items-center gap-2 mb-4">
+              <Speed className="text-black dark:text-white" />
+              <Typography variant="h6" className="font-semibold text-black dark:text-white">
+                Machine Learning Settings
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.mlEnabled}
+                      onChange={(e) => handleSettingChange('mlEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable ML Risk Scoring"
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" className="mb-2">
+                  Model Retrain Interval (hours): {settings.modelRetrainInterval}
+                </Typography>
                 <Slider
-                  value={settings.system.dataRetention}
-                  onChange={(e, value) => handleSettingChange('system', 'dataRetention', value)}
+                  value={settings.modelRetrainInterval}
+                  onChange={(e, value) => handleSettingChange('modelRetrainInterval', value)}
+                  min={6}
+                  max={72}
+                  marks={[
+                    { value: 6, label: '6h' },
+                    { value: 24, label: '24h' },
+                    { value: 72, label: '72h' },
+                  ]}
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.anomalyDetection}
+                      onChange={(e) => handleSettingChange('anomalyDetection', e.target.checked)}
+                    />
+                  }
+                  label="Anomaly Detection"
+                />
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.predictiveScoring}
+                      onChange={(e) => handleSettingChange('predictiveScoring', e.target.checked)}
+                    />
+                  }
+                  label="Predictive Risk Scoring"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* System Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Card>
+          <CardContent>
+            <Box className="flex items-center gap-2 mb-4">
+              <Storage className="text-black dark:text-white" />
+              <Typography variant="h6" className="font-semibold text-black dark:text-white">
+                System Settings
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" className="mb-2">
+                  Data Retention (days): {settings.dataRetention}
+                </Typography>
+                <Slider
+                  value={settings.dataRetention}
+                  onChange={(e, value) => handleSettingChange('dataRetention', value)}
                   min={30}
                   max={365}
                   marks={[
                     { value: 30, label: '30d' },
                     { value: 90, label: '90d' },
-                    { value: 365, label: '1y' },
+                    { value: 365, label: '365d' },
                   ]}
-                  valueLabelDisplay="auto"
                 />
-              </Box>
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.system.backupEnabled}
-                    onChange={(e) => handleSettingChange('system', 'backupEnabled', e.target.checked)}
-                  />
-                }
-                label="Enable Auto Backup"
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.system.autoScaling}
-                    onChange={(e) => handleSettingChange('system', 'autoScaling', e.target.checked)}
-                  />
-                }
-                label="Auto Scaling"
-              />
-
-              <FormControl fullWidth sx={{ mt: 2 }}>
-                <InputLabel>Performance Mode</InputLabel>
-                <Select
-                  value={settings.system.performanceMode}
-                  onChange={(e) => handleSettingChange('system', 'performanceMode', e.target.value)}
-                  label="Performance Mode"
-                >
-                  <MenuItem value="balanced">Balanced</MenuItem>
-                  <MenuItem value="performance">High Performance</MenuItem>
-                  <MenuItem value="efficiency">Energy Efficient</MenuItem>
-                </Select>
-              </FormControl>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Integrations */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <DataUsage sx={{ mr: 1 }} />
-                <Typography variant="h6">Integrations</Typography>
-              </Box>
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.integrations.siemEnabled}
-                    onChange={(e) => handleSettingChange('integrations', 'siemEnabled', e.target.checked)}
-                  />
-                }
-                label="SIEM Integration"
-              />
-
-              {settings.integrations.siemEnabled && (
-                <TextField
-                  fullWidth
-                  label="SIEM Endpoint"
-                  value={settings.integrations.siemEndpoint}
-                  onChange={(e) => handleSettingChange('integrations', 'siemEndpoint', e.target.value)}
-                  sx={{ mt: 1 }}
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Log Level</InputLabel>
+                  <Select
+                    value={settings.logLevel}
+                    onChange={(e) => handleSettingChange('logLevel', e.target.value)}
+                    label="Log Level"
+                  >
+                    <MenuItem value="error">Error</MenuItem>
+                    <MenuItem value="warn">Warning</MenuItem>
+                    <MenuItem value="info">Info</MenuItem>
+                    <MenuItem value="debug">Debug</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={settings.backupEnabled}
+                      onChange={(e) => handleSettingChange('backupEnabled', e.target.checked)}
+                    />
+                  }
+                  label="Enable Automatic Backups"
                 />
-              )}
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Performance Mode</InputLabel>
+                  <Select
+                    value={settings.performanceMode}
+                    onChange={(e) => handleSettingChange('performanceMode', e.target.value)}
+                    label="Performance Mode"
+                  >
+                    <MenuItem value="low">Low (Battery Saver)</MenuItem>
+                    <MenuItem value="balanced">Balanced</MenuItem>
+                    <MenuItem value="high">High Performance</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.integrations.ldapEnabled}
-                    onChange={(e) => handleSettingChange('integrations', 'ldapEnabled', e.target.checked)}
-                  />
-                }
-                label="LDAP Integration"
+      {/* System Status */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+      >
+        <Card>
+          <CardContent>
+            <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+              System Status
+            </Typography>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={3}>
+                <Box className="text-center p-3 bg-green-50 dark:bg-green-900 rounded">
+                  <CheckCircle className="text-green-600 dark:text-green-400 text-2xl mb-2" />
+                  <Typography variant="body2" className="font-medium">
+                    ML Models
+                  </Typography>
+                  <Typography variant="caption" className="text-green-600 dark:text-green-400">
+                    Active
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={3}>
+                <Box className="text-center p-3 bg-blue-50 dark:bg-blue-900 rounded">
+                  <CheckCircle className="text-blue-600 dark:text-blue-400 text-2xl mb-2" />
+                  <Typography variant="body2" className="font-medium">
+                    Database
+                  </Typography>
+                  <Typography variant="caption" className="text-blue-600 dark:text-blue-400">
+                    Connected
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={3}>
+                <Box className="text-center p-3 bg-orange-50 dark:bg-orange-900 rounded">
+                  <Warning className="text-orange-600 dark:text-orange-400 text-2xl mb-2" />
+                  <Typography variant="body2" className="font-medium">
+                    API Services
+                  </Typography>
+                  <Typography variant="caption" className="text-orange-600 dark:text-orange-400">
+                    Warning
+                  </Typography>
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} md={3}>
+                <Box className="text-center p-3 bg-red-50 dark:bg-red-900 rounded">
+                  <Error className="text-red-600 dark:text-red-400 text-2xl mb-2" />
+                  <Typography variant="body2" className="font-medium">
+                    Backup System
+                  </Typography>
+                  <Typography variant="caption" className="text-red-600 dark:text-red-400">
+                    Failed
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Save Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6 }}
+        className="flex justify-end"
+      >
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleSave}
+          disabled={isSaving}
+          startIcon={isSaving ? <CircularProgress size={20} /> : <Save />}
+          className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+        >
+          {isSaving ? 'Saving...' : 'Save Settings'}
+        </Button>
+      </motion.div>
+
+      {/* Edit Setting Dialog */}
+      <Dialog 
+        open={editDialogOpen} 
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Edit Setting
+          </Typography>
+          <IconButton onClick={() => setEditDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {editingSetting && (
+            <Box className="space-y-4">
+              <Typography variant="body1" className="font-medium">
+                {editingSetting.name}
+              </Typography>
+              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                {editingSetting.description}
+              </Typography>
+              <TextField
+                fullWidth
+                label="Value"
+                defaultValue={editingSetting.value}
               />
-
-              {settings.integrations.ldapEnabled && (
-                <TextField
-                  fullWidth
-                  label="LDAP Server"
-                  value={settings.integrations.ldapServer}
-                  onChange={(e) => handleSettingChange('integrations', 'ldapServer', e.target.value)}
-                  sx={{ mt: 1 }}
-                />
-              )}
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.integrations.apiEnabled}
-                    onChange={(e) => handleSettingChange('integrations', 'apiEnabled', e.target.checked)}
-                  />
-                }
-                label="API Access"
-              />
-
-              {settings.integrations.apiEnabled && (
-                <TextField
-                  fullWidth
-                  label="API Key"
-                  value={settings.integrations.apiKey}
-                  onChange={(e) => handleSettingChange('integrations', 'apiKey', e.target.value)}
-                  sx={{ mt: 1 }}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Action Buttons */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Refresh />}
-                  onClick={handleReset}
-                  disabled={saveSettingsMutation.isLoading}
-                >
-                  Reset
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Save />}
-                  onClick={handleSave}
-                  disabled={!hasChanges || saveSettingsMutation.isLoading}
-                >
-                  {saveSettingsMutation.isLoading ? 'Saving...' : 'Save Settings'}
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              toast.success('Setting updated');
+              setEditDialogOpen(false);
+            }}
+            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          >
+            Update
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </motion.div>
   );
 };
 

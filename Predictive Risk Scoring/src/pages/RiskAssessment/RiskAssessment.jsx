@@ -17,6 +17,7 @@ import {
   Tabs,
   Tab,
   useTheme,
+  CircularProgress,
 } from '@mui/material';
 import {
   Security,
@@ -40,23 +41,7 @@ import {
   AnimatedButton,
   StatusIndicator,
 } from "../../components/UI/index.jsx";
-
-// Mock data - replace with actual API calls
-const mockRiskFactors = [
-  { id: 1, name: 'Unusual Login Time', weight: 0.15, score: 8, description: 'Login outside normal business hours' },
-  { id: 2, name: 'Large File Transfer', weight: 0.25, score: 12, description: 'Transfer of files > 100MB' },
-  { id: 3, name: 'Failed Authentication', weight: 0.20, score: 6, description: 'Multiple failed login attempts' },
-  { id: 4, name: 'Privilege Escalation', weight: 0.30, score: 15, description: 'Access to restricted resources' },
-  { id: 5, name: 'Network Anomaly', weight: 0.10, score: 4, description: 'Unusual network traffic patterns' },
-];
-
-const mockEntityHistory = [
-  { timestamp: '2024-01-15 14:30', event: 'Login from new IP', score: 5 },
-  { timestamp: '2024-01-15 15:45', event: 'Large file download', score: 12 },
-  { timestamp: '2024-01-15 16:20', event: 'Access to admin panel', score: 8 },
-  { timestamp: '2024-01-15 17:10', event: 'Failed login attempt', score: 3 },
-  { timestamp: '2024-01-15 18:00', event: 'Database query execution', score: 6 },
-];
+import apiService from "../../services/apiService";
 
 const RiskAssessment = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -64,42 +49,25 @@ const RiskAssessment = () => {
   const [isAssessing, setIsAssessing] = useState(false);
   const theme = useTheme();
 
-  // Mock API queries
-  const { data: riskData, isLoading } = useQuery(
+  // Real API queries
+  const { data: riskData, isLoading, refetch } = useQuery(
     ['riskAssessment', entityId],
-    () => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          entityId: entityId || 'user-john.doe',
-          overallScore: 34,
-          riskLevel: 'Medium',
-          factors: mockRiskFactors,
-          history: mockEntityHistory,
-          recommendations: [
-            'Review recent login patterns',
-            'Monitor file transfer activities',
-            'Implement additional authentication for admin access',
-          ],
-        });
-      }, 2000);
-    }),
+    () => apiService.assessEntityRisk(entityId),
     {
       enabled: !!entityId,
+      retry: false,
     }
   );
 
   const assessRiskMutation = useMutation(
-    (entityId) => new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true, message: 'Risk assessment completed' });
-      }, 3000);
-    }),
+    (entityId) => apiService.assessEntityRisk(entityId),
     {
       onSuccess: () => {
         toast.success('Risk assessment completed successfully');
         setIsAssessing(false);
+        refetch();
       },
-      onError: () => {
+      onError: (error) => {
         toast.error('Risk assessment failed');
         setIsAssessing(false);
       },
@@ -116,23 +84,23 @@ const RiskAssessment = () => {
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return '#ef4444'; // Red for critical/high risk
-    if (score >= 25) return '#f59e0b'; // Orange for medium risk
-    return '#10b981'; // Green for low risk
+    if (score >= 40) return '#ef4444';
+    if (score >= 25) return '#f59e0b';
+    return '#10b981';
   };
 
   const getRiskLevel = (score) => {
-    if (score >= 40) return 'Critical';
-    if (score >= 30) return 'High';
-    if (score >= 20) return 'Medium';
-    return 'Low';
+    if (score >= 40) return "Critical";
+    if (score >= 30) return "High";
+    if (score >= 20) return "Medium";
+    return "Low";
   };
 
   const getRiskLevelKey = (score) => {
-    if (score >= 40) return 'critical';
-    if (score >= 30) return 'high';
-    if (score >= 20) return 'medium';
-    return 'low';
+    if (score >= 40) return "critical";
+    if (score >= 30) return "high";
+    if (score >= 20) return "medium";
+    return "low";
   };
 
   return (
@@ -151,7 +119,7 @@ const RiskAssessment = () => {
       >
         <Typography 
           variant="h4" 
-          component="h1" 
+          component="h1"
           className="font-bold text-black dark:text-white mb-2 tracking-tight"
         >
           Risk Assessment
@@ -160,7 +128,7 @@ const RiskAssessment = () => {
           variant="body1" 
           className="text-gray-600 dark:text-gray-400"
         >
-          Comprehensive security risk analysis and scoring
+          Assess security risk for individual entities using AI-powered analysis
         </Typography>
       </motion.div>
 
@@ -170,396 +138,294 @@ const RiskAssessment = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <StyledCard variant="hover" className="mb-6">
-          <CardContent className="p-6">
-            <Box className="flex items-center gap-3 mb-6">
-              <Search className="text-black dark:text-white" />
-              <Typography 
-                variant="h6" 
-                className="font-semibold text-black dark:text-white"
+        <StyledCard variant="hover" className="p-6">
+          <CardContent>
+            <Typography 
+              variant="h6" 
+              className="font-semibold text-black dark:text-white mb-4"
+            >
+              Entity Assessment
+            </Typography>
+            
+            <Box className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+              <TextField
+                fullWidth
+                label="Entity ID"
+                variant="outlined"
+                value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
+                placeholder="Enter entity ID (e.g., user-john.doe, server-prod-01)"
+                className="sm:flex-1"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': {
+                      borderColor: theme.palette.divider,
+                    },
+                    '&:hover fieldset': {
+                      borderColor: theme.palette.primary.main,
+                    },
+                  },
+                }}
+              />
+              <AnimatedButton
+                variant="contained"
+                onClick={handleAssessRisk}
+                disabled={isAssessing || !entityId.trim()}
+                startIcon={isAssessing ? <CircularProgress size={20} /> : <Assessment />}
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
               >
-                Assess Entity Risk
-              </Typography>
+                {isAssessing ? 'Assessing...' : 'Assess Risk'}
+              </AnimatedButton>
             </Box>
-            <Grid container spacing={3} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <TextField
-                  fullWidth
-                  label="Entity ID"
-                  placeholder="Enter user ID, server name, or IP address"
-                  value={entityId}
-                  onChange={(e) => setEntityId(e.target.value)}
-                  variant="outlined"
-                  className="bg-white dark:bg-black"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: theme.palette.background.paper,
-                      '& fieldset': {
-                        borderColor: theme.palette.divider,
-                      },
-                      '&:hover fieldset': {
-                        borderColor: theme.palette.primary.main,
-                      },
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: theme.palette.text.secondary,
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="h-full"
-                >
-                  <AnimatedButton
-                    variant="contained"
-                    size="large"
-                    onClick={handleAssessRisk}
-                    disabled={isAssessing || !entityId.trim()}
-                    startIcon={<Assessment />}
-                    className={`w-full h-14 ${isAssessing ? 'animate-pulse' : ''} bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200`}
-                  >
-                    {isAssessing ? 'Analyzing...' : 'Assess Risk'}
-                  </AnimatedButton>
-                </motion.div>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </StyledCard>
+
+                         {entityId && (
+               <Alert severity="info" className="mt-4">
+                 <Typography variant="body2">
+                   Enter any entity ID to get a dynamic risk assessment. The system will generate different risk scores based on the entity ID.
+                 </Typography>
+               </Alert>
+             )}
+           </CardContent>
+         </StyledCard>
       </motion.div>
 
-      <AnimatePresence>
-        {riskData && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            {/* Risk Overview */}
-            <Grid container spacing={3} className="mb-8">
-              <Grid item xs={12} md={4}>
-                <MetricCard
-                  title="Overall Risk Score"
-                  value={riskData.overallScore}
-                  subtitle="Score range: 5-50"
-                  icon={<Security className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
-                  className="card-hover"
-                />
-                <Box className="mt-4">
-                  <RiskChip 
-                    level={getRiskLevelKey(riskData.overallScore)} 
-                    score={riskData.overallScore}
-                    size="medium"
-                  />
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={(riskData.overallScore / 50) * 100}
-                  className="mt-4 h-2 rounded-full"
-                  sx={{
-                    backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#f5f5f5',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: getRiskColor(riskData.overallScore),
-                      borderRadius: '4px',
-                    },
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={8}>
-                <StyledCard variant="hover">
-                  <CardContent className="p-6">
-                    <Box className="flex items-center gap-3 mb-6">
-                      <BarChart className="text-black dark:text-white" />
-                      <Typography 
-                        variant="h6" 
-                        className="font-semibold text-black dark:text-white"
-                      >
-                        Risk Factors Breakdown
-                      </Typography>
-                    </Box>
-                    <Grid container spacing={3}>
-                      {riskData.factors.map((factor, index) => (
-                        <Grid item xs={12} key={factor.id}>
-                          <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 * index, duration: 0.3 }}
-                            className="space-y-3"
-                          >
-                            <Box className="flex justify-between items-center">
-                              <Typography 
-                                variant="body1" 
-                                className="font-medium text-black dark:text-white"
-                              >
-                                {factor.name}
-                              </Typography>
-                              <Typography 
-                                variant="body2" 
-                                className="font-bold"
-                                sx={{ color: getRiskColor(factor.score) }}
-                              >
-                                {factor.score} pts
-                              </Typography>
-                            </Box>
-                            <LinearProgress
-                              variant="determinate"
-                              value={(factor.score / 15) * 100}
-                              className="h-2 rounded-full"
-                              sx={{
-                                backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#f5f5f5',
-                                '& .MuiLinearProgress-bar': {
-                                  backgroundColor: getRiskColor(factor.score),
-                                  borderRadius: '4px',
-                                },
-                              }}
-                            />
-                            <Typography 
-                              variant="caption" 
-                              className="text-gray-600 dark:text-gray-400"
-                            >
-                              Weight: {factor.weight * 100}% • {factor.description}
-                            </Typography>
-                          </motion.div>
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </CardContent>
-                </StyledCard>
-              </Grid>
-            </Grid>
-
-            {/* Detailed Analysis */}
-            <StyledCard variant="hover" className="mt-8">
-              <CardContent className="p-6">
-                <Tabs 
-                  value={selectedTab} 
-                  onChange={(e, newValue) => setSelectedTab(newValue)} 
-                  className="mb-6"
-                  sx={{
-                    '& .MuiTab-root': {
-                      color: theme.palette.text.secondary,
-                      fontWeight: 500,
-                      '&.Mui-selected': {
-                        color: theme.palette.primary.main,
-                      },
-                    },
-                    '& .MuiTabs-indicator': {
-                      backgroundColor: theme.palette.primary.main,
-                    },
-                  }}
-                >
-                  <Tab label="Risk History" icon={<Timeline />} />
-                  <Tab label="Recommendations" icon={<Rule />} />
-                  <Tab label="Pattern Analysis" icon={<Assessment />} />
-                </Tabs>
-
-                <AnimatePresence mode="wait">
-                  {selectedTab === 0 && (
-                    <motion.div
-                      key="history"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Typography 
-                        variant="h6" 
-                        className="font-semibold text-black dark:text-white mb-4"
-                      >
-                        Recent Risk Events
-                      </Typography>
-                      <List className="space-y-2">
-                        {riskData.history.map((event, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 * index, duration: 0.2 }}
-                          >
-                            <ListItem className="bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                              <ListItemIcon>
-                                <Warning sx={{ color: getRiskColor(event.score) }} />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={
-                                  <Typography className="font-medium text-black dark:text-white">
-                                    {event.event}
-                                  </Typography>
-                                }
-                                secondary={
-                                  <Typography className="text-gray-600 dark:text-gray-400">
-                                    {event.timestamp}
-                                  </Typography>
-                                }
-                              />
-                              <RiskChip 
-                                level={getRiskLevelKey(event.score)} 
-                                score={event.score}
-                                size="small"
-                              />
-                            </ListItem>
-                          </motion.div>
-                        ))}
-                      </List>
-                    </motion.div>
-                  )}
-
-                  {selectedTab === 1 && (
-                    <motion.div
-                      key="recommendations"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Typography 
-                        variant="h6" 
-                        className="font-semibold text-black dark:text-white mb-4"
-                      >
-                        Actionable Recommendations
-                      </Typography>
-                      <Alert 
-                        severity="info" 
-                        className="mb-6 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900"
-                        sx={{
-                          backgroundColor: theme.palette.mode === 'dark' ? '#212121' : '#fafafa',
-                          color: theme.palette.text.primary,
-                          border: `1px solid ${theme.palette.divider}`,
-                          '& .MuiAlert-icon': {
-                            color: theme.palette.text.primary,
-                          },
-                        }}
-                      >
-                        Based on the current risk assessment, here are the recommended actions to reduce risk exposure.
-                      </Alert>
-                      <List className="space-y-2">
-                        {riskData.recommendations.map((rec, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 * index, duration: 0.2 }}
-                          >
-                            <ListItem className="bg-gray-50 dark:bg-gray-800 rounded-lg">
-                              <ListItemIcon>
-                                <CheckCircle className="text-green-600 dark:text-green-400" />
-                              </ListItemIcon>
-                              <ListItemText 
-                                primary={
-                                  <Typography className="font-medium text-black dark:text-white">
-                                    {rec}
-                                  </Typography>
-                                } 
-                              />
-                            </ListItem>
-                          </motion.div>
-                        ))}
-                      </List>
-                    </motion.div>
-                  )}
-
-                  {selectedTab === 2 && (
-                    <motion.div
-                      key="patterns"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <Typography 
-                        variant="h6" 
-                        className="font-semibold text-black dark:text-white mb-6"
-                      >
-                        Pattern Analysis
-                      </Typography>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1, duration: 0.3 }}
-                          >
-                            <StyledCard className="border border-gray-200 dark:border-gray-700">
-                              <CardContent className="p-4">
-                                <Typography 
-                                  variant="subtitle1" 
-                                  className="font-semibold text-black dark:text-white mb-3"
-                                >
-                                  Behavioral Patterns
-                                </Typography>
-                                <Typography 
-                                  variant="body2" 
-                                  className="text-gray-600 dark:text-gray-400 leading-relaxed"
-                                >
-                                  • Unusual login times detected<br />
-                                  • Increased file transfer activity<br />
-                                  • Access to restricted resources<br />
-                                  • Network traffic anomalies
-                                </Typography>
-                              </CardContent>
-                            </StyledCard>
-                          </motion.div>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.3 }}
-                          >
-                            <StyledCard className="border border-gray-200 dark:border-gray-700">
-                              <CardContent className="p-4">
-                                <Typography 
-                                  variant="subtitle1" 
-                                  className="font-semibold text-black dark:text-white mb-3"
-                                >
-                                  Risk Indicators
-                                </Typography>
-                                <Typography 
-                                  variant="body2" 
-                                  className="text-gray-600 dark:text-gray-400 leading-relaxed"
-                                >
-                                  • Privilege escalation attempts<br />
-                                  • Failed authentication events<br />
-                                  • Large data transfers<br />
-                                  • Unusual access patterns
-                                </Typography>
-                              </CardContent>
-                            </StyledCard>
-                          </motion.div>
-                        </Grid>
-                      </Grid>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </StyledCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isLoading && (
+      {/* Assessment Results */}
+      {riskData && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <StyledCard>
-            <CardContent className="p-6">
-              <Box className="flex items-center gap-4">
-                <LoadingBar className="flex-1" />
-                <Typography 
-                  variant="body2" 
-                  className="text-gray-600 dark:text-gray-400 font-medium"
-                >
-                  Analyzing entity risk...
-                </Typography>
-              </Box>
+          <Grid container spacing={3}>
+            {/* Risk Score Card */}
+            <Grid item xs={12} md={4}>
+              <MetricCard
+                title="Overall Risk Score"
+                value={riskData.overallScore}
+                subtitle={`${getRiskLevel(riskData.overallScore)} Risk Level`}
+                icon={<Security className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+                className="card-hover"
+              />
+            </Grid>
+
+            {/* Risk Level Card */}
+            <Grid item xs={12} md={4}>
+              <StyledCard variant="hover" className="p-6 h-full">
+                <CardContent className="text-center">
+                  <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                    Risk Level
+                  </Typography>
+                  <RiskChip 
+                    level={getRiskLevelKey(riskData.overallScore)} 
+                    score={riskData.overallScore}
+                  />
+                  <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-2">
+                    {getRiskLevel(riskData.overallScore)} Risk
+                  </Typography>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+
+            {/* Entity Info Card */}
+            <Grid item xs={12} md={4}>
+              <StyledCard variant="hover" className="p-6 h-full">
+                <CardContent>
+                  <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                    Entity Information
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Entity ID:</strong> {riskData.entityId}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Assessment Date:</strong> {new Date().toLocaleDateString()}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Assessment Time:</strong> {new Date().toLocaleTimeString()}
+                  </Typography>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+          </Grid>
+        </motion.div>
+      )}
+
+      {/* Detailed Assessment */}
+      {riskData && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <StyledCard variant="hover" className="p-6">
+            <CardContent>
+              <Tabs 
+                value={selectedTab} 
+                onChange={(e, newValue) => setSelectedTab(newValue)}
+                className="mb-6"
+              >
+                <Tab label="Risk Factors" icon={<Rule />} />
+                <Tab label="Activity History" icon={<Timeline />} />
+                <Tab label="Recommendations" icon={<CheckCircle />} />
+              </Tabs>
+
+              <AnimatePresence mode="wait">
+                {selectedTab === 0 && (
+                  <motion.div
+                    key="factors"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                      Risk Factors Analysis
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {riskData.factors?.map((factor, index) => (
+                        <Grid item xs={12} md={6} key={index}>
+                          <StyledCard variant="hover" className="p-4">
+                            <CardContent>
+                              <Box className="flex justify-between items-start mb-2">
+                                <Typography variant="subtitle1" className="font-semibold text-black dark:text-white">
+                                  {factor.name}
+                                </Typography>
+                                <Chip 
+                                  label={`${factor.score} pts`}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: getRiskColor(factor.score),
+                                    color: 'white',
+                                    fontWeight: 'bold'
+                                  }}
+                                />
+                              </Box>
+                              <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mb-2">
+                                {factor.description}
+                              </Typography>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={(factor.score / 15) * 100}
+                                sx={{
+                                  height: 8,
+                                  borderRadius: 4,
+                                  backgroundColor: theme.palette.mode === 'dark' ? '#374151' : '#e5e7eb',
+                                  '& .MuiLinearProgress-bar': {
+                                    backgroundColor: getRiskColor(factor.score),
+                                  },
+                                }}
+                              />
+                              <Typography variant="caption" className="text-gray-500 dark:text-gray-400 mt-1 block">
+                                Weight: {(factor.weight * 100).toFixed(0)}%
+                              </Typography>
+                            </CardContent>
+                          </StyledCard>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </motion.div>
+                )}
+
+                {selectedTab === 1 && (
+                  <motion.div
+                    key="history"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                      Recent Activity History
+                    </Typography>
+                    <List>
+                      {riskData.history?.map((event, index) => (
+                        <ListItem key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                          <ListItemIcon>
+                            <Warning sx={{ color: getRiskColor(event.score) }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={event.event}
+                            secondary={`${event.timestamp} • Risk Score: ${event.score}`}
+                            primaryTypographyProps={{
+                              className: 'font-medium text-black dark:text-white'
+                            }}
+                            secondaryTypographyProps={{
+                              className: 'text-gray-600 dark:text-gray-400'
+                            }}
+                          />
+                          <Chip 
+                            label={`${event.score} pts`}
+                            size="small"
+                            sx={{ 
+                              backgroundColor: getRiskColor(event.score),
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </motion.div>
+                )}
+
+                {selectedTab === 2 && (
+                  <motion.div
+                    key="recommendations"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                      Security Recommendations
+                    </Typography>
+                    <List>
+                      {riskData.recommendations?.map((recommendation, index) => (
+                        <ListItem key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                          <ListItemIcon>
+                            <CheckCircle sx={{ color: '#10b981' }} />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={recommendation}
+                            primaryTypographyProps={{
+                              className: 'text-black dark:text-white'
+                            }}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </CardContent>
           </StyledCard>
+        </motion.div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <CircularProgress size={60} />
+          <Typography variant="h6" className="mt-4 text-gray-600 dark:text-gray-400">
+            Analyzing entity risk...
+          </Typography>
+        </motion.div>
+      )}
+
+      {/* Error State */}
+      {!riskData && !isLoading && entityId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <Alert severity="warning" className="mt-4">
+            <Typography variant="body2">
+              Enter an entity ID and click "Assess Risk" to get started with the risk assessment.
+            </Typography>
+          </Alert>
         </motion.div>
       )}
     </motion.div>

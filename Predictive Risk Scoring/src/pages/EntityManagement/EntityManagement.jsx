@@ -14,6 +14,11 @@ import {
   InputLabel,
   Select,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import {
   Search,
@@ -23,22 +28,13 @@ import {
   Delete,
   Visibility,
   MoreVert,
+  Close,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { useQuery } from 'react-query';
 import toast from 'react-hot-toast';
-
-// Mock data
-const mockEntities = [
-  { id: 1, name: 'user-john.doe', type: 'User', department: 'Engineering', riskScore: 45, status: 'High', lastActivity: '2 min ago', ipAddress: '192.168.1.100' },
-  { id: 2, name: 'server-prod-01', type: 'Server', department: 'Infrastructure', riskScore: 38, status: 'Medium', lastActivity: '5 min ago', ipAddress: '10.0.0.50' },
-  { id: 3, name: 'user-sarah.smith', type: 'User', department: 'Finance', riskScore: 42, status: 'High', lastActivity: '8 min ago', ipAddress: '192.168.1.101' },
-  { id: 4, name: 'database-main', type: 'Database', department: 'IT', riskScore: 35, status: 'Medium', lastActivity: '12 min ago', ipAddress: '10.0.0.100' },
-  { id: 5, name: 'user-mike.wilson', type: 'User', department: 'HR', riskScore: 31, status: 'Medium', lastActivity: '15 min ago', ipAddress: '192.168.1.102' },
-  { id: 6, name: 'web-server-01', type: 'Server', department: 'Infrastructure', riskScore: 22, status: 'Low', lastActivity: '20 min ago', ipAddress: '10.0.0.51' },
-  { id: 7, name: 'user-lisa.jones', type: 'User', department: 'Marketing', riskScore: 18, status: 'Low', lastActivity: '25 min ago', ipAddress: '192.168.1.103' },
-  { id: 8, name: 'backup-server', type: 'Server', department: 'IT', riskScore: 28, status: 'Medium', lastActivity: '30 min ago', ipAddress: '10.0.0.200' },
-];
+import { motion } from 'framer-motion';
+import apiService from '../../services/apiService';
 
 const EntityManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,10 +42,15 @@ const EntityManagement = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  const { data: entities, isLoading } = useQuery(
+  const { data: entities, isLoading, error } = useQuery(
     'entities',
-    () => new Promise((resolve) => setTimeout(() => resolve(mockEntities), 1000))
+    () => apiService.getAllEntities(),
+    {
+      refetchInterval: 30000, // Refresh every 30 seconds
+    }
   );
 
   const getRiskColor = (score) => {
@@ -58,55 +59,30 @@ const EntityManagement = () => {
     return '#4caf50';
   };
 
-  const columns = [
-    { field: 'name', headerName: 'Entity Name', width: 200, renderCell: (params) => (
-      <Box>
-        <Typography variant="body2" fontWeight="medium">{params.value}</Typography>
-        <Typography variant="caption" color="textSecondary">{params.row.ipAddress}</Typography>
-      </Box>
-    )},
-    { field: 'type', headerName: 'Type', width: 120, renderCell: (params) => (
-      <Chip label={params.value} size="small" variant="outlined" />
-    )},
-    { field: 'department', headerName: 'Department', width: 150 },
-    { field: 'riskScore', headerName: 'Risk Score', width: 130, renderCell: (params) => (
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Typography variant="body2" sx={{ color: getRiskColor(params.value), mr: 1 }}>
-          {params.value}
-        </Typography>
-        <Chip
-          label={params.row.status}
-          size="small"
-          sx={{
-            backgroundColor: getRiskColor(params.value),
-            color: 'white',
-          }}
-        />
-      </Box>
-    )},
-    { field: 'lastActivity', headerName: 'Last Activity', width: 150 },
-    { field: 'actions', headerName: 'Actions', width: 120, renderCell: (params) => (
-      <Box>
-        <IconButton size="small" onClick={() => handleView(params.row)}>
-          <Visibility />
-        </IconButton>
-        <IconButton size="small" onClick={(e) => handleMenuOpen(e, params.row)}>
-          <MoreVert />
-        </IconButton>
-      </Box>
-    )},
-  ];
+  const getRiskStatus = (score) => {
+    if (score >= 40) return 'High';
+    if (score >= 25) return 'Medium';
+    return 'Low';
+  };
 
-  const handleView = (entity) => {
-    toast.success(`Viewing ${entity.name}`);
+  const handleView = async (entity) => {
+    try {
+      const assessment = await apiService.assessEntityRisk(entity.name);
+      setSelectedEntity({ ...entity, assessment });
+      setDetailsDialogOpen(true);
+    } catch (error) {
+      toast.error('Failed to load entity details');
+    }
   };
 
   const handleMenuOpen = (event, entity) => {
     setAnchorEl(event.currentTarget);
+    setSelectedEntity(entity);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+    setSelectedEntity(null);
   };
 
   const handleBulkAction = (action) => {
@@ -118,110 +94,354 @@ const EntityManagement = () => {
     setSelectedRows([]);
   };
 
-  return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Entity Management
-      </Typography>
-
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              placeholder="Search entities..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{ startAdornment: <Search /> }}
-              sx={{ flexGrow: 1 }}
-            />
-            <FormControl sx={{ minWidth: 150 }}>
-              <InputLabel>Department</InputLabel>
-              <Select
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                label="Department"
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="Engineering">Engineering</MenuItem>
-                <MenuItem value="Finance">Finance</MenuItem>
-                <MenuItem value="IT">IT</MenuItem>
-                <MenuItem value="Infrastructure">Infrastructure</MenuItem>
-                <MenuItem value="HR">HR</MenuItem>
-                <MenuItem value="Marketing">Marketing</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl sx={{ minWidth: 150 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                label="Status"
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="High">High Risk</MenuItem>
-                <MenuItem value="Medium">Medium Risk</MenuItem>
-                <MenuItem value="Low">Low Risk</MenuItem>
-              </Select>
-            </FormControl>
-            <Button variant="contained" startIcon={<Add />}>
-              Add Entity
-            </Button>
-          </Box>
-
-          {selectedRows.length > 0 && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              {selectedRows.length} entities selected
-              <Button size="small" sx={{ ml: 2 }} onClick={() => handleBulkAction('Export')}>
-                Export
-              </Button>
-              <Button size="small" sx={{ ml: 1 }} onClick={() => handleBulkAction('Assess')}>
-                Bulk Assess
-              </Button>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent>
-          <DataGrid
-            rows={entities || []}
-            columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            checkboxSelection
-            disableSelectionOnClick
-            onSelectionModelChange={(newSelection) => setSelectedRows(newSelection)}
-            loading={isLoading}
+  const columns = [
+    { 
+      field: 'name', 
+      headerName: 'Entity Name', 
+      width: 200, 
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2" fontWeight="medium">{params.value}</Typography>
+          <Typography variant="caption" color="textSecondary">{params.row.ipAddress}</Typography>
+        </Box>
+      )
+    },
+    { 
+      field: 'type', 
+      headerName: 'Type', 
+      width: 120, 
+      renderCell: (params) => (
+        <Chip label={params.value} size="small" variant="outlined" />
+      )
+    },
+    { field: 'department', headerName: 'Department', width: 150 },
+    { 
+      field: 'riskScore', 
+      headerName: 'Risk Score', 
+      width: 130, 
+      renderCell: (params) => (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ color: getRiskColor(params.value), mr: 1 }}>
+            {params.value}
+          </Typography>
+          <Chip
+            label={getRiskStatus(params.value)}
+            size="small"
             sx={{
-              '& .MuiDataGrid-cell': {
-                borderBottom: '1px solid #173a5e',
-              },
-              '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                borderBottom: '2px solid #173a5e',
-              },
+              backgroundColor: getRiskColor(params.value),
+              color: 'white',
             }}
           />
-        </CardContent>
-      </Card>
+        </Box>
+      )
+    },
+    { field: 'lastActivity', headerName: 'Last Activity', width: 150 },
+    { 
+      field: 'actions', 
+      headerName: 'Actions', 
+      width: 120, 
+      renderCell: (params) => (
+        <Box>
+          <IconButton size="small" onClick={() => handleView(params.row)}>
+            <Visibility />
+          </IconButton>
+          <IconButton size="small" onClick={(e) => handleMenuOpen(e, params.row)}>
+            <MoreVert />
+          </IconButton>
+        </Box>
+      )
+    },
+  ];
 
+  const filteredEntities = entities?.filter(entity => {
+    const matchesSearch = entity.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = !departmentFilter || entity.department === departmentFilter;
+    const matchesStatus = !statusFilter || getRiskStatus(entity.riskScore) === statusFilter;
+    return matchesSearch && matchesDepartment && matchesStatus;
+  }) || [];
+
+  const departments = [...new Set(entities?.map(entity => entity.department) || [])];
+  const statuses = ['High', 'Medium', 'Low'];
+
+  if (isLoading) {
+    return (
+      <Box className="flex items-center justify-center h-64">
+        <CircularProgress size={60} />
+        <Typography variant="h6" className="ml-4 text-gray-600 dark:text-gray-400">
+          Loading entities...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" className="mt-4">
+        Failed to load entities. Please try again.
+      </Alert>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <Typography 
+          variant="h4" 
+          component="h1"
+          className="font-bold text-black dark:text-white mb-2 tracking-tight"
+        >
+          Entity Management
+        </Typography>
+        <Typography 
+          variant="body1" 
+          className="text-gray-600 dark:text-gray-400"
+        >
+          Monitor and manage all entities in your security environment
+        </Typography>
+      </motion.div>
+
+      {/* Controls */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Card className="mb-6">
+          <CardContent>
+            <Box className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <TextField
+                label="Search Entities"
+                variant="outlined"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+                size="small"
+              />
+              <FormControl size="small" className="min-w-[150px]">
+                <InputLabel>Department</InputLabel>
+                <Select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  label="Department"
+                >
+                  <MenuItem value="">All Departments</MenuItem>
+                  {departments.map(dept => (
+                    <MenuItem key={dept} value={dept}>{dept}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" className="min-w-[120px]">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  label="Status"
+                >
+                  <MenuItem value="">All Status</MenuItem>
+                  {statuses.map(status => (
+                    <MenuItem key={status} value={status}>{status}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+              >
+                Add Entity
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Bulk Actions */}
+      {selectedRows.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <Alert severity="info">
+            <Box className="flex items-center justify-between">
+              <Typography variant="body2">
+                {selectedRows.length} entity(ies) selected
+              </Typography>
+              <Box className="flex gap-2">
+                <Button size="small" onClick={() => handleBulkAction('Export')}>
+                  Export
+                </Button>
+                <Button size="small" onClick={() => handleBulkAction('Assess')}>
+                  Bulk Assess
+                </Button>
+                <Button size="small" color="error" onClick={() => handleBulkAction('Delete')}>
+                  Delete
+                </Button>
+              </Box>
+            </Box>
+          </Alert>
+        </motion.div>
+      )}
+
+      {/* Data Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card>
+          <CardContent className="p-0">
+            <DataGrid
+              rows={filteredEntities}
+              columns={columns}
+              pageSize={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              checkboxSelection
+              disableSelectionOnClick
+              onSelectionModelChange={(newSelection) => setSelectedRows(newSelection)}
+              className="border-0"
+              sx={{
+                '& .MuiDataGrid-root': {
+                  border: 'none',
+                },
+                '& .MuiDataGrid-cell': {
+                  borderBottom: '1px solid #e0e0e0',
+                },
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: '#f5f5f5',
+                  borderBottom: '2px solid #e0e0e0',
+                },
+              }}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Entity Details Dialog */}
+      <Dialog 
+        open={detailsDialogOpen} 
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Entity Details: {selectedEntity?.name}
+          </Typography>
+          <IconButton onClick={() => setDetailsDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {selectedEntity?.assessment && (
+            <Box className="space-y-4">
+              <Box className="grid grid-cols-2 gap-4">
+                <Box>
+                  <Typography variant="subtitle1" className="font-semibold mb-2">
+                    Entity Information
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Name:</strong> {selectedEntity.name}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Type:</strong> {selectedEntity.type}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Department:</strong> {selectedEntity.department}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>IP Address:</strong> {selectedEntity.ipAddress}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" className="font-semibold mb-2">
+                    Risk Assessment
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Risk Score:</strong> {selectedEntity.assessment.overallScore}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Risk Level:</strong> {selectedEntity.assessment.riskLevel}
+                  </Typography>
+                  <Typography variant="body2" className="mb-1">
+                    <strong>Last Activity:</strong> {selectedEntity.lastActivity}
+                  </Typography>
+                </Box>
+              </Box>
+              
+              <Box>
+                <Typography variant="subtitle1" className="font-semibold mb-2">
+                  Risk Factors
+                </Typography>
+                {selectedEntity.assessment.factors?.map((factor, index) => (
+                  <Box key={index} className="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <Typography variant="body2" className="font-medium">
+                      {factor.name}
+                    </Typography>
+                    <Typography variant="caption" className="text-gray-600 dark:text-gray-400">
+                      {factor.description}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle1" className="font-semibold mb-2">
+                  Recommendations
+                </Typography>
+                {selectedEntity.assessment.recommendations?.map((rec, index) => (
+                  <Typography key={index} variant="body2" className="mb-1">
+                    • {rec}
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleMenuClose}>
-          <Edit sx={{ mr: 1 }} /> Edit
+        <MenuItem onClick={() => {
+          handleView(selectedEntity);
+          handleMenuClose();
+        }}>
+          <Visibility className="mr-2" /> View Details
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <Visibility sx={{ mr: 1 }} /> View Details
+        <MenuItem onClick={() => {
+          toast.success('Edit functionality coming soon');
+          handleMenuClose();
+        }}>
+          <Edit className="mr-2" /> Edit
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <Delete sx={{ mr: 1 }} /> Delete
+        <MenuItem onClick={() => {
+          toast.success('Delete functionality coming soon');
+          handleMenuClose();
+        }}>
+          <Delete className="mr-2" /> Delete
         </MenuItem>
       </Menu>
-    </Box>
+    </motion.div>
   );
 };
 

@@ -16,6 +16,17 @@ import {
   Alert,
   LinearProgress,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  IconButton,
 } from '@mui/material';
 import {
   ExpandMore,
@@ -26,259 +37,495 @@ import {
   TrendingUp,
   Lightbulb,
   AutoFixHigh,
+  Schedule,
+  Visibility,
+  Close,
+  PlayArrow,
+  Pause,
+  Stop,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
-
-// Mock data
-const mockRecommendations = [
-  {
-    id: 1,
-    title: 'Implement Multi-Factor Authentication',
-    description: 'Enable MFA for all user accounts to prevent unauthorized access',
-    priority: 'High',
-    impact: 'Critical',
-    effort: 'Medium',
-    status: 'Pending',
-    category: 'Authentication',
-    affectedEntities: 45,
-    estimatedRiskReduction: 35,
-  },
-  {
-    id: 2,
-    title: 'Review Firewall Rules',
-    description: 'Audit and tighten firewall configurations to restrict unnecessary access',
-    priority: 'Medium',
-    impact: 'High',
-    effort: 'Low',
-    status: 'In Progress',
-    category: 'Network Security',
-    affectedEntities: 12,
-    estimatedRiskReduction: 25,
-  },
-  {
-    id: 3,
-    title: 'Update Access Controls',
-    description: 'Implement least privilege principle for database access',
-    priority: 'High',
-    impact: 'High',
-    effort: 'High',
-    status: 'Pending',
-    category: 'Access Control',
-    affectedEntities: 8,
-    estimatedRiskReduction: 40,
-  },
-  {
-    id: 4,
-    title: 'Enable File Integrity Monitoring',
-    description: 'Monitor critical system files for unauthorized changes',
-    priority: 'Medium',
-    impact: 'Medium',
-    effort: 'Medium',
-    status: 'Completed',
-    category: 'System Security',
-    affectedEntities: 23,
-    estimatedRiskReduction: 20,
-  },
-  {
-    id: 5,
-    title: 'Implement Data Loss Prevention',
-    description: 'Deploy DLP solution to prevent sensitive data exfiltration',
-    priority: 'High',
-    impact: 'Critical',
-    effort: 'High',
-    status: 'Pending',
-    category: 'Data Protection',
-    affectedEntities: 156,
-    estimatedRiskReduction: 45,
-  },
-];
+import { useQuery, useMutation } from 'react-query';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import apiService from '../../services/apiService';
 
 const Recommendations = () => {
   const [expanded, setExpanded] = useState(false);
+  const [selectedRecommendation, setSelectedRecommendation] = useState(null);
+  const [implementationDialogOpen, setImplementationDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [implementationData, setImplementationData] = useState({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    effort: 'Medium',
+    timeline: '1 week',
+    assignee: '',
+  });
 
-  const { data: recommendations, isLoading } = useQuery(
+  const { data: recommendations, isLoading, error } = useQuery(
     'recommendations',
-    () => new Promise((resolve) => setTimeout(() => resolve(mockRecommendations), 1000))
+    () => apiService.getRecommendations(),
+    {
+      refetchInterval: 60000, // Refresh every minute
+    }
+  );
+
+  const implementMutation = useMutation(
+    (data) => new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true, message: 'Recommendation implemented successfully' });
+      }, 2000);
+    }),
+    {
+      onSuccess: () => {
+        toast.success('Recommendation implementation started');
+        setImplementationDialogOpen(false);
+        setImplementationData({
+          title: '',
+          description: '',
+          priority: 'Medium',
+          effort: 'Medium',
+          timeline: '1 week',
+          assignee: '',
+        });
+      },
+      onError: () => {
+        toast.error('Failed to implement recommendation');
+      },
+    }
+  );
+
+  const scheduleMutation = useMutation(
+    (data) => new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true, message: 'Recommendation scheduled successfully' });
+      }, 1000);
+    }),
+    {
+      onSuccess: () => {
+        toast.success('Recommendation scheduled successfully');
+        setScheduleDialogOpen(false);
+      },
+      onError: () => {
+        toast.error('Failed to schedule recommendation');
+      },
+    }
   );
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High': return '#f44336';
-      case 'Medium': return '#ff9800';
-      case 'Low': return '#4caf50';
-      default: return '#757575';
+      case 'High':
+        return '#ef4444';
+      case 'Medium':
+        return '#f59e0b';
+      case 'Low':
+        return '#10b981';
+      default:
+        return '#6b7280';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Completed': return '#4caf50';
-      case 'In Progress': return '#2196f3';
-      case 'Pending': return '#ff9800';
-      default: return '#757575';
+      case 'Completed':
+        return '#10b981';
+      case 'In Progress':
+        return '#3b82f6';
+      case 'Pending':
+        return '#f59e0b';
+      default:
+        return '#6b7280';
     }
   };
 
   const handleImplement = (recommendation) => {
-    // Implementation logic
-    console.log('Implementing:', recommendation.title);
+    setSelectedRecommendation(recommendation);
+    setImplementationData({
+      title: recommendation.title,
+      description: recommendation.description,
+      priority: recommendation.priority,
+      effort: recommendation.effort,
+      timeline: '1 week',
+      assignee: '',
+    });
+    setImplementationDialogOpen(true);
+  };
+
+  const handleSchedule = (recommendation) => {
+    setSelectedRecommendation(recommendation);
+    setScheduleDialogOpen(true);
+  };
+
+  const handleImplementationSubmit = () => {
+    if (!implementationData.title || !implementationData.assignee) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    implementMutation.mutate(implementationData);
+  };
+
+  const handleScheduleSubmit = () => {
+    scheduleMutation.mutate(selectedRecommendation);
+  };
+
+  const getAIRecommendations = async (entityId) => {
+    try {
+      const riskData = await apiService.assessEntityRisk(entityId);
+      const aiRecommendations = await apiService.getAIRecommendations(entityId, riskData);
+      return aiRecommendations;
+    } catch (error) {
+      console.error('Failed to get AI recommendations:', error);
+      return [];
+    }
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ width: '100%' }}>
-        <LinearProgress />
+      <Box className="flex items-center justify-center h-64">
+        <CircularProgress size={60} />
+        <Typography variant="h6" className="ml-4 text-gray-600 dark:text-gray-400">
+          Loading recommendations...
+        </Typography>
       </Box>
     );
   }
 
-  return (
-    <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Security Recommendations
-      </Typography>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="body2">
-          <strong>AI-Powered Insights:</strong> These recommendations are generated based on real-time risk analysis 
-          and machine learning models. Implement them to reduce your organization's risk exposure.
-        </Typography>
+  if (error) {
+    return (
+      <Alert severity="error" className="mt-4">
+        Failed to load recommendations. Please try again.
       </Alert>
+    );
+  }
 
-      <Grid container spacing={3}>
-        {/* Summary Cards */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Recommendations
-              </Typography>
-              <Typography variant="h4" component="div">
-                {recommendations?.length || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                High Priority
-              </Typography>
-              <Typography variant="h4" component="div" sx={{ color: '#f44336' }}>
-                {recommendations?.filter(r => r.priority === 'High').length || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Completed
-              </Typography>
-              <Typography variant="h4" component="div" sx={{ color: '#4caf50' }}>
-                {recommendations?.filter(r => r.status === 'Completed').length || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Risk Reduction Potential
-              </Typography>
-              <Typography variant="h4" component="div" sx={{ color: '#2196f3' }}>
-                {Math.round(recommendations?.reduce((sum, r) => sum + r.estimatedRiskReduction, 0) / recommendations?.length) || 0}%
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <Typography 
+          variant="h4" 
+          component="h1"
+          className="font-bold text-black dark:text-white mb-2 tracking-tight"
+        >
+          Security Recommendations
+        </Typography>
+        <Typography 
+          variant="body1" 
+          className="text-gray-600 dark:text-gray-400"
+        >
+          AI-powered security recommendations and implementation tracking
+        </Typography>
+      </motion.div>
 
-        {/* Recommendations List */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Actionable Recommendations
-              </Typography>
-              
-              {recommendations?.map((recommendation) => (
-                <Accordion key={recommendation.id} sx={{ mb: 2 }}>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6">{recommendation.title}</Typography>
-                        <Typography variant="body2" color="textSecondary">
-                          {recommendation.description}
+      {/* AI Recommendations Alert */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Alert 
+          severity="info" 
+          className="mb-6"
+          action={
+            <Button 
+              color="inherit" 
+              size="small"
+              onClick={() => getAIRecommendations('user-john.doe')}
+            >
+              Get AI Recommendations
+            </Button>
+          }
+        >
+          <Typography variant="body2">
+            Use AI-powered recommendations for specific entities. Click to get personalized security recommendations.
+          </Typography>
+        </Alert>
+      </motion.div>
+
+      {/* Recommendations Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Grid container spacing={3}>
+          {recommendations?.map((recommendation, index) => (
+            <Grid item xs={12} md={6} key={recommendation.id}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index, duration: 0.3 }}
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="p-6">
+                    <Box className="flex justify-between items-start mb-4">
+                      <Typography variant="h6" className="font-semibold text-black dark:text-white mb-2">
+                        {recommendation.title}
+                      </Typography>
+                      <Chip
+                        label={recommendation.status}
+                        size="small"
+                        sx={{
+                          backgroundColor: getStatusColor(recommendation.status),
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </Box>
+
+                    <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mb-4">
+                      {recommendation.description}
+                    </Typography>
+
+                    <Box className="grid grid-cols-2 gap-4 mb-4">
+                      <Box>
+                        <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
+                          Priority
                         </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
                         <Chip
                           label={recommendation.priority}
                           size="small"
-                          sx={{ backgroundColor: getPriorityColor(recommendation.priority), color: 'white' }}
-                        />
-                        <Chip
-                          label={recommendation.status}
-                          size="small"
-                          sx={{ backgroundColor: getStatusColor(recommendation.status), color: 'white' }}
+                          sx={{
+                            backgroundColor: getPriorityColor(recommendation.priority),
+                            color: 'white',
+                            fontWeight: 'bold'
+                          }}
                         />
                       </Box>
+                      <Box>
+                        <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
+                          Impact
+                        </Typography>
+                        <Typography variant="body2" className="font-medium">
+                          {recommendation.impact}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
+                          Effort
+                        </Typography>
+                        <Typography variant="body2" className="font-medium">
+                          {recommendation.effort}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
+                          Category
+                        </Typography>
+                        <Typography variant="body2" className="font-medium">
+                          {recommendation.category}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={8}>
-                        <Typography variant="subtitle1" gutterBottom>
-                          Details
-                        </Typography>
-                        <Typography variant="body2" paragraph>
-                          {recommendation.description}
-                        </Typography>
-                        
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                          <Chip label={`Impact: ${recommendation.impact}`} size="small" />
-                          <Chip label={`Effort: ${recommendation.effort}`} size="small" />
-                          <Chip label={`Category: ${recommendation.category}`} size="small" />
-                        </Box>
 
-                        <Typography variant="body2" color="textSecondary">
-                          Affects {recommendation.affectedEntities} entities • 
-                          Estimated risk reduction: {recommendation.estimatedRiskReduction}%
-                        </Typography>
-                      </Grid>
-                      
-                      <Grid item xs={12} md={4}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <Button
-                            variant="contained"
-                            startIcon={<AutoFixHigh />}
-                            onClick={() => handleImplement(recommendation)}
-                            disabled={recommendation.status === 'Completed'}
-                          >
-                            {recommendation.status === 'Completed' ? 'Completed' : 'Implement'}
-                          </Button>
-                          
-                          <Button variant="outlined" size="small">
-                            View Details
-                          </Button>
-                          
-                          <Button variant="outlined" size="small">
-                            Schedule Implementation
-                          </Button>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </CardContent>
-          </Card>
+                    <Box className="mb-4">
+                      <Typography variant="caption" className="text-gray-500 dark:text-gray-400">
+                        Risk Reduction: {recommendation.estimatedRiskReduction}%
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={recommendation.estimatedRiskReduction}
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: '#e5e7eb',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: '#10b981',
+                          },
+                        }}
+                      />
+                    </Box>
+
+                    <Box className="flex gap-2">
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<PlayArrow />}
+                        onClick={() => handleImplement(recommendation)}
+                        disabled={recommendation.status === 'Completed'}
+                        className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                      >
+                        Implement
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Schedule />}
+                        onClick={() => handleSchedule(recommendation)}
+                        className="border-black dark:border-white text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        Schedule
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Visibility />}
+                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                      >
+                        Details
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+          ))}
         </Grid>
-      </Grid>
-    </Box>
+      </motion.div>
+
+      {/* Implementation Dialog */}
+      <Dialog 
+        open={implementationDialogOpen} 
+        onClose={() => setImplementationDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Implement Recommendation
+          </Typography>
+          <IconButton onClick={() => setImplementationDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4">
+            <TextField
+              fullWidth
+              label="Title"
+              value={implementationData.title}
+              onChange={(e) => setImplementationData({...implementationData, title: e.target.value})}
+            />
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Description"
+              value={implementationData.description}
+              onChange={(e) => setImplementationData({...implementationData, description: e.target.value})}
+            />
+            <Box className="grid grid-cols-2 gap-4">
+              <FormControl fullWidth>
+                <InputLabel>Priority</InputLabel>
+                <Select
+                  value={implementationData.priority}
+                  onChange={(e) => setImplementationData({...implementationData, priority: e.target.value})}
+                  label="Priority"
+                >
+                  <MenuItem value="High">High</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="Low">Low</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Effort</InputLabel>
+                <Select
+                  value={implementationData.effort}
+                  onChange={(e) => setImplementationData({...implementationData, effort: e.target.value})}
+                  label="Effort"
+                >
+                  <MenuItem value="Low">Low</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="High">High</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box className="grid grid-cols-2 gap-4">
+              <TextField
+                fullWidth
+                label="Timeline"
+                value={implementationData.timeline}
+                onChange={(e) => setImplementationData({...implementationData, timeline: e.target.value})}
+              />
+              <TextField
+                fullWidth
+                label="Assignee"
+                value={implementationData.assignee}
+                onChange={(e) => setImplementationData({...implementationData, assignee: e.target.value})}
+              />
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImplementationDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleImplementationSubmit}
+            disabled={implementMutation.isLoading}
+            startIcon={implementMutation.isLoading ? <CircularProgress size={20} /> : <PlayArrow />}
+            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          >
+            {implementMutation.isLoading ? 'Implementing...' : 'Start Implementation'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Dialog */}
+      <Dialog 
+        open={scheduleDialogOpen} 
+        onClose={() => setScheduleDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Schedule Recommendation
+          </Typography>
+          <IconButton onClick={() => setScheduleDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4">
+            <Typography variant="body1" className="font-medium">
+              {selectedRecommendation?.title}
+            </Typography>
+            <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+              {selectedRecommendation?.description}
+            </Typography>
+            <TextField
+              fullWidth
+              label="Scheduled Date"
+              type="datetime-local"
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              label="Notes"
+              multiline
+              rows={3}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScheduleDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleScheduleSubmit}
+            disabled={scheduleMutation.isLoading}
+            startIcon={scheduleMutation.isLoading ? <CircularProgress size={20} /> : <Schedule />}
+            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          >
+            {scheduleMutation.isLoading ? 'Scheduling...' : 'Schedule'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </motion.div>
   );
 };
 
