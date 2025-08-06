@@ -1,6 +1,6 @@
 package com.riskguard.service;
 
-import com.riskguard.domain.Entity;
+import com.riskguard.domain.MonitoredEntity;
 import com.riskguard.domain.RiskEvent;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.slf4j.Logger;
@@ -50,30 +50,30 @@ public class MachineLearningService {
      * Calculate risk score for an entity using Isolation Forest
      */
     @Cacheable(value = "riskScores", key = "#entity.entityId")
-    public double calculateRiskScore(Entity entity, List<RiskEvent> recentEvents) {
+    public double calculateRiskScore(MonitoredEntity entity, List<RiskEvent> recentEvents) {
         logger.debug("Calculating risk score for entity: {}", entity.getEntityId());
 
         try {
             // Extract features from entity and events
             double[] features = extractFeatures(entity, recentEvents);
-            
+
             // Get or create Isolation Forest model for this entity type
             String modelKey = getModelKey(entity);
-            IsolationForestModel model = models.computeIfAbsent(modelKey, 
-                k -> new IsolationForestModel(nEstimators, maxSamples, contamination));
+            IsolationForestModel model = models.computeIfAbsent(modelKey,
+                    k -> new IsolationForestModel(nEstimators, maxSamples, contamination));
 
             // Calculate anomaly score
             double anomalyScore = model.predict(features);
-            
+
             // Convert anomaly score to risk score (0-50 range)
             double riskScore = convertAnomalyScoreToRiskScore(anomalyScore);
-            
+
             // Apply rule-based adjustments
             riskScore = applyRuleBasedAdjustments(riskScore, entity, recentEvents);
-            
+
             // Ensure score is within bounds
             riskScore = Math.max(5.0, Math.min(50.0, riskScore));
-            
+
             logger.debug("Risk score for entity {}: {}", entity.getEntityId(), riskScore);
             return riskScore;
 
@@ -86,36 +86,36 @@ public class MachineLearningService {
     /**
      * Extract numerical features from entity and events for ML model
      */
-    private double[] extractFeatures(Entity entity, List<RiskEvent> events) {
+    private double[] extractFeatures(MonitoredEntity entity, List<RiskEvent> events) {
         List<Double> features = new ArrayList<>();
 
         // Entity-based features
         features.add(entity.getCurrentRiskScore());
         features.add(getEntityAgeInDays(entity));
         features.add(getEntityActivityScore(entity));
-        
+
         // Event-based features
-        features.add(getEventCount(events, RiskEvent.EventType.LOGIN_FAILURE));
-        features.add(getEventCount(events, RiskEvent.EventType.PRIVILEGE_ESCALATION));
-        features.add(getEventCount(events, RiskEvent.EventType.LARGE_FILE_TRANSFER));
-        features.add(getEventCount(events, RiskEvent.EventType.UNAUTHORIZED_FILE_ACCESS));
-        features.add(getEventCount(events, RiskEvent.EventType.SUSPICIOUS_ACTIVITY));
-        
+        features.add((double) getEventCount(events, RiskEvent.EventType.LOGIN_FAILURE));
+        features.add((double) getEventCount(events, RiskEvent.EventType.PRIVILEGE_ESCALATION));
+        features.add((double) getEventCount(events, RiskEvent.EventType.LARGE_FILE_TRANSFER));
+        features.add((double) getEventCount(events, RiskEvent.EventType.UNAUTHORIZED_FILE_ACCESS));
+        features.add((double) getEventCount(events, RiskEvent.EventType.SUSPICIOUS_ACTIVITY));
+
         // Time-based features
         features.add(getRecentActivityScore(events));
         features.add(getAfterHoursActivityScore(events));
         features.add(getWeekendActivityScore(events));
-        
+
         // Severity-based features
-        features.add(getHighSeverityEventCount(events));
+        features.add((double) getHighSeverityEventCount(events));
         features.add(getAverageEventSeverity(events));
-        
+
         // Network features
-        features.add(getUniqueIpCount(events));
-        features.add(getPortScanAttempts(events));
-        
+        features.add((double) getUniqueIpCount(events));
+        features.add((double) getPortScanAttempts(events));
+
         // File system features
-        features.add(getLargeFileTransferCount(events));
+        features.add((double) getLargeFileTransferCount(events));
         features.add(getTotalDataTransferred(events));
 
         return features.stream().mapToDouble(Double::doubleValue).toArray();
@@ -134,13 +134,13 @@ public class MachineLearningService {
     /**
      * Apply rule-based adjustments to ML-calculated risk score
      */
-    private double applyRuleBasedAdjustments(double baseScore, Entity entity, List<RiskEvent> events) {
+    private double applyRuleBasedAdjustments(double baseScore, MonitoredEntity entity, List<RiskEvent> events) {
         double adjustedScore = baseScore;
 
         // Rule 1: Recent high-severity events
         long recentHighSeverityEvents = events.stream()
-            .filter(e -> e.isHighSeverity() && e.isRecent())
-            .count();
+                .filter(e -> e.isHighSeverity() && e.isRecent())
+                .count();
         adjustedScore += recentHighSeverityEvents * 5.0;
 
         // Rule 2: After-hours activity
@@ -184,7 +184,7 @@ public class MachineLearningService {
             this.maxSamples = maxSamples;
             this.contamination = contamination;
             this.trees = new ArrayList<>();
-            
+
             // Initialize trees (simplified implementation)
             for (int i = 0; i < nEstimators; i++) {
                 trees.add(new IsolationTree(maxSamples));
@@ -201,16 +201,18 @@ public class MachineLearningService {
             for (IsolationTree tree : trees) {
                 totalPathLength += tree.getPathLength(features);
             }
-            
+
             double avgPathLength = totalPathLength / trees.size();
-            
+
             // Convert to anomaly score (0-1 range)
             return Math.exp(-avgPathLength / getExpectedPathLength(features.length));
         }
 
         private double getExpectedPathLength(int n) {
-            if (n <= 1) return 0;
-            if (n == 2) return 1;
+            if (n <= 1)
+                return 0;
+            if (n == 2)
+                return 1;
             return 2 * (Math.log(n - 1) + 0.5772156649) - 2 * (n - 1) / n;
         }
     }
@@ -240,134 +242,138 @@ public class MachineLearningService {
     }
 
     // Helper methods for feature extraction
-    private double getEntityAgeInDays(Entity entity) {
-        if (entity.getCreatedAt() == null) return 0.0;
-        return java.time.Duration.between(entity.getCreatedAt(), 
-            java.time.LocalDateTime.now()).toDays();
+    private double getEntityAgeInDays(MonitoredEntity entity) {
+        if (entity.getCreatedAt() == null)
+            return 0.0;
+        return java.time.Duration.between(entity.getCreatedAt(),
+                java.time.LocalDateTime.now()).toDays();
     }
 
-    private double getEntityActivityScore(Entity entity) {
-        if (entity.getLastActivity() == null) return 0.0;
+    private double getEntityActivityScore(MonitoredEntity entity) {
+        if (entity.getLastActivity() == null)
+            return 0.0;
         long hoursSinceLastActivity = java.time.Duration.between(
-            entity.getLastActivity(), java.time.LocalDateTime.now()).toHours();
+                entity.getLastActivity(), java.time.LocalDateTime.now()).toHours();
         return Math.max(0.0, 24.0 - hoursSinceLastActivity);
     }
 
     private long getEventCount(List<RiskEvent> events, RiskEvent.EventType eventType) {
         return events.stream()
-            .filter(e -> e.getEventType() == eventType)
-            .count();
+                .filter(e -> e.getEventType() == eventType)
+                .count();
     }
 
     private double getRecentActivityScore(List<RiskEvent> events) {
         return events.stream()
-            .filter(RiskEvent::isRecent)
-            .count();
+                .filter(RiskEvent::isRecent)
+                .count();
     }
 
     private double getAfterHoursActivityScore(List<RiskEvent> events) {
         return events.stream()
-            .filter(e -> e.getEventTimestamp().getHour() < 6 || e.getEventTimestamp().getHour() > 22)
-            .count();
+                .filter(e -> e.getEventTimestamp().getHour() < 6 || e.getEventTimestamp().getHour() > 22)
+                .count();
     }
 
     private double getWeekendActivityScore(List<RiskEvent> events) {
         return events.stream()
-            .filter(e -> e.getEventTimestamp().getDayOfWeek().getValue() > 5)
-            .count();
+                .filter(e -> e.getEventTimestamp().getDayOfWeek().getValue() > 5)
+                .count();
     }
 
     private long getHighSeverityEventCount(List<RiskEvent> events) {
         return events.stream()
-            .filter(RiskEvent::isHighSeverity)
-            .count();
+                .filter(RiskEvent::isHighSeverity)
+                .count();
     }
 
     private double getAverageEventSeverity(List<RiskEvent> events) {
-        if (events.isEmpty()) return 0.0;
+        if (events.isEmpty())
+            return 0.0;
         return events.stream()
-            .mapToDouble(e -> e.getSeverity().getLevel())
-            .average()
-            .orElse(0.0);
+                .mapToDouble(e -> e.getSeverity().getLevel())
+                .average()
+                .orElse(0.0);
     }
 
     private double getUniqueIpCount(List<RiskEvent> events) {
         return events.stream()
-            .map(RiskEvent::getSourceIp)
-            .filter(Objects::nonNull)
-            .distinct()
-            .count();
+                .map(RiskEvent::getSourceIp)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
     }
 
     private long getPortScanAttempts(List<RiskEvent> events) {
         return events.stream()
-            .filter(e -> e.getEventType() == RiskEvent.EventType.PORT_SCAN)
-            .count();
+                .filter(e -> e.getEventType() == RiskEvent.EventType.PORT_SCAN)
+                .count();
     }
 
     private long getLargeFileTransferCount(List<RiskEvent> events) {
         return events.stream()
-            .filter(e -> e.getEventType() == RiskEvent.EventType.LARGE_FILE_TRANSFER)
-            .count();
+                .filter(e -> e.getEventType() == RiskEvent.EventType.LARGE_FILE_TRANSFER)
+                .count();
     }
 
     private double getTotalDataTransferred(List<RiskEvent> events) {
         return events.stream()
-            .filter(e -> e.getFileSize() != null)
-            .mapToLong(RiskEvent::getFileSize)
-            .sum() / (1024.0 * 1024.0); // Convert to MB
+                .filter(e -> e.getFileSize() != null)
+                .mapToLong(RiskEvent::getFileSize)
+                .sum() / (1024.0 * 1024.0); // Convert to MB
     }
 
     private boolean hasAfterHoursActivity(List<RiskEvent> events) {
         return events.stream()
-            .anyMatch(e -> e.getEventTimestamp().getHour() < 6 || e.getEventTimestamp().getHour() > 22);
+                .anyMatch(e -> e.getEventTimestamp().getHour() < 6 || e.getEventTimestamp().getHour() > 22);
     }
 
     private boolean hasUnusualAccessPatterns(List<RiskEvent> events) {
         // Check for rapid succession of different types of events
-        if (events.size() < 3) return false;
-        
+        if (events.size() < 3)
+            return false;
+
         List<RiskEvent> recentEvents = events.stream()
-            .filter(RiskEvent::isRecent)
-            .collect(Collectors.toList());
-            
+                .filter(RiskEvent::isRecent)
+                .collect(Collectors.toList());
+
         return recentEvents.size() >= 3;
     }
 
-    private String getModelKey(Entity entity) {
+    private String getModelKey(MonitoredEntity entity) {
         return entity.getType().name() + "_" + entity.getDepartment();
     }
 
     /**
      * Retrain models with new data
      */
-    public void retrainModels(List<Entity> entities, List<RiskEvent> events) {
+    public void retrainModels(List<MonitoredEntity> entities, List<RiskEvent> events) {
         logger.info("Retraining ML models with {} entities and {} events", entities.size(), events.size());
-        
+
         // Group entities by type and department
-        Map<String, List<Entity>> entityGroups = entities.stream()
-            .collect(Collectors.groupingBy(this::getModelKey));
-            
+        Map<String, List<MonitoredEntity>> entityGroups = entities.stream()
+                .collect(Collectors.groupingBy(this::getModelKey));
+
         // Retrain each model
         entityGroups.forEach((modelKey, entityGroup) -> {
             try {
                 // Extract training data
                 List<double[]> trainingData = new ArrayList<>();
-                for (Entity entity : entityGroup) {
+                for (MonitoredEntity entity : entityGroup) {
                     List<RiskEvent> entityEvents = events.stream()
-                        .filter(e -> e.getEntity().getId().equals(entity.getId()))
-                        .collect(Collectors.toList());
+                            .filter(e -> e.getEntity().getId().equals(entity.getId()))
+                            .collect(Collectors.toList());
                     trainingData.add(extractFeatures(entity, entityEvents));
                 }
-                
+
                 // Create new model
                 IsolationForestModel newModel = new IsolationForestModel(nEstimators, maxSamples, contamination);
                 models.put(modelKey, newModel);
-                
+
                 logger.debug("Retrained model for key: {}", modelKey);
             } catch (Exception e) {
                 logger.error("Error retraining model for key: {}", modelKey, e);
             }
         });
     }
-} 
+}

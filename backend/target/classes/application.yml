@@ -1,0 +1,196 @@
+spring:
+  application:
+    name: risk-scoring-system
+
+  # PostgreSQL Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/riskdb
+    driver-class-name: org.postgresql.Driver
+    username: riskuser
+    password: riskpass
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    defer-datasource-initialization: true
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: risk-scoring-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+  # Jackson Configuration
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,configprops
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Risk Scoring Configuration
+risk:
+  scoring:
+    ml:
+      isolation-forest:
+        contamination: 0.1
+        n-estimators: 100
+        max-samples: 256
+      random-forest:
+        n-estimators: 100
+        max-depth: 10
+        min-samples-split: 2
+    thresholds:
+      high: 40
+      medium: 25
+      low: 15
+    weights:
+      authentication: 0.25
+      network-activity: 0.20
+      file-access: 0.15
+      privilege-escalation: 0.30
+      data-exfiltration: 0.10
+    update-interval: 30s
+    batch-size: 1000
+    cache:
+      ttl: 300s
+      max-size: 10000
+
+# Logging Configuration
+logging:
+  level:
+    com.riskguard: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Third-party Integrations
+integrations:
+  siem:
+    enabled: false
+    endpoint: https://siem.company.com/api
+    api-key: ${SIEM_API_KEY:}
+    timeout: 5000ms
+  ldap:
+    enabled: false
+    url: ldap://ldap.company.com:389
+    base-dn: dc=company,dc=com
+    username: ${LDAP_USERNAME:}
+    password: ${LDAP_PASSWORD:}
+  aws:
+    sagemaker:
+      enabled: false
+      endpoint-name: risk-scoring-endpoint
+      region: us-east-1
+      access-key: ${AWS_ACCESS_KEY:}
+      secret-key: ${AWS_SECRET_KEY:}
+
+# Feature Flags
+features:
+  real-time-scoring: true
+  ml-enhanced: true
+  rule-engine: true
+  kafka-integration: true
+  prometheus-metrics: true
+  health-checks: true
+
+# Development Profile
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/riskdb
+    driver-class-name: org.postgresql.Driver
+    username: riskuser
+    password: riskpass
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+
+# Production Profile
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:postgresql://localhost:5432/riskdb
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:riskuser}
+    password: ${DB_PASSWORD:riskpass}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+logging:
+  level:
+    com.riskguard: INFO
+    org.springframework.security: WARN

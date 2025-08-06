@@ -1,5 +1,6 @@
 package com.riskguard.domain;
 
+import com.riskguard.domain.MonitoredEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.CreatedDate;
@@ -10,7 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * RiskEvent represents security events and incidents that contribute to risk scoring
+ * RiskEvent represents security events and incidents that contribute to risk
+ * scoring
  */
 @Entity
 @Table(name = "risk_events")
@@ -24,7 +26,7 @@ public class RiskEvent {
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
-    private Entity entity;
+    private MonitoredEntity entity;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -101,16 +103,16 @@ public class RiskEvent {
     private LocalDateTime eventTimestamp;
 
     @ElementCollection
-    @CollectionTable(name = "risk_event_metadata", 
-                     joinColumns = @JoinColumn(name = "risk_event_id"))
+    @CollectionTable(name = "risk_event_metadata", joinColumns = @JoinColumn(name = "risk_event_id"))
     @MapKeyColumn(name = "metadata_key")
     @Column(name = "metadata_value", columnDefinition = "TEXT")
     private Map<String, String> metadata = new HashMap<>();
 
     // Constructors
-    public RiskEvent() {}
+    public RiskEvent() {
+    }
 
-    public RiskEvent(Entity entity, EventType eventType, Severity severity, String title) {
+    public RiskEvent(MonitoredEntity entity, EventType eventType, Severity severity, String title) {
         this.entity = entity;
         this.eventType = eventType;
         this.severity = severity;
@@ -127,11 +129,11 @@ public class RiskEvent {
         this.id = id;
     }
 
-    public Entity getEntity() {
+    public MonitoredEntity getEntity() {
         return entity;
     }
 
-    public void setEntity(Entity entity) {
+    public void setEntity(MonitoredEntity entity) {
         this.entity = entity;
     }
 
@@ -376,27 +378,27 @@ public class RiskEvent {
     public enum EventType {
         // Authentication Events
         LOGIN_SUCCESS, LOGIN_FAILURE, LOGOUT, PASSWORD_CHANGE, PASSWORD_RESET,
-        
+
         // Network Events
         CONNECTION_ATTEMPT, CONNECTION_SUCCESS, CONNECTION_FAILURE,
         PORT_SCAN, BRUTE_FORCE_ATTACK, DDoS_ATTACK,
-        
+
         // File System Events
         FILE_ACCESS, FILE_DOWNLOAD, FILE_UPLOAD, FILE_DELETE, FILE_MODIFY,
         LARGE_FILE_TRANSFER, UNAUTHORIZED_FILE_ACCESS,
-        
+
         // Privilege Events
         PRIVILEGE_ESCALATION, ADMIN_ACCESS, ROLE_CHANGE, PERMISSION_CHANGE,
-        
+
         // Data Events
         DATA_ACCESS, DATA_EXPORT, DATA_DELETION, SENSITIVE_DATA_ACCESS,
-        
+
         // System Events
         SYSTEM_STARTUP, SYSTEM_SHUTDOWN, CONFIGURATION_CHANGE, PATCH_INSTALLATION,
-        
+
         // Application Events
         APPLICATION_START, APPLICATION_STOP, API_CALL, DATABASE_QUERY,
-        
+
         // Other Events
         SUSPICIOUS_ACTIVITY, ANOMALY_DETECTED, THREAT_DETECTED, COMPLIANCE_VIOLATION
     }
@@ -414,4 +416,4 @@ public class RiskEvent {
             return level;
         }
     }
-} 
+}
