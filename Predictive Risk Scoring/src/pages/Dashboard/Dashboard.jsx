@@ -161,9 +161,15 @@ const Dashboard = () => {
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
-    if (score >= 25) return theme.palette.mode === 'dark' ? '#bdbdbd' : '#757575';
-    return theme.palette.mode === 'dark' ? '#9e9e9e' : '#424242';
+    if (score >= 40) return '#ef4444'; // Red for critical/high risk
+    if (score >= 25) return '#f59e0b'; // Orange for medium risk
+    return '#10b981'; // Green for low risk
+  };
+
+  const getRiskColorThemed = (score) => {
+    if (score >= 40) return theme.palette.mode === 'dark' ? '#fca5a5' : '#dc2626';
+    if (score >= 25) return theme.palette.mode === 'dark' ? '#fbbf24' : '#d97706';
+    return theme.palette.mode === 'dark' ? '#6ee7b7' : '#059669';
   };
 
   const getRiskStatus = (score) => {
@@ -285,9 +291,9 @@ const Dashboard = () => {
               icon={<Shield className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
               trend={
                 dashboardData.riskTrend === "increasing" ? (
-                  <TrendingUp className="text-red-500 dark:text-red-400" />
+                  <TrendingUp className="text-red-500" />
                 ) : (
-                  <TrendingDown className="text-green-500 dark:text-green-400" />
+                  <TrendingDown className="text-green-500" />
                 )
               }
               className="card-hover"
@@ -370,16 +376,19 @@ const Dashboard = () => {
                     <Line
                       type="monotone"
                       dataKey="score"
-                      stroke={theme.palette.mode === 'dark' ? '#ffffff' : '#000000'}
+                      stroke="#3b82f6"
                       strokeWidth={3}
                       dot={{ 
-                        fill: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
+                        fill: "#3b82f6", 
                         strokeWidth: 2, 
-                        r: 5 
+                        r: 5,
+                        stroke: "#ffffff"
                       }}
                       activeDot={{ 
-                        r: 7, 
-                        fill: theme.palette.mode === 'dark' ? '#f5f5f5' : '#212121' 
+                        r: 8, 
+                        fill: "#1d4ed8",
+                        stroke: "#ffffff",
+                        strokeWidth: 2
                       }}
                     />
                   </LineChart>
@@ -409,17 +418,17 @@ const Dashboard = () => {
                         { 
                           name: "Low Risk", 
                           value: 1068, 
-                          color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#e0e0e0'
+                          color: "#10b981"
                         },
                         { 
                           name: "Medium Risk", 
                           value: 156, 
-                          color: theme.palette.mode === 'dark' ? '#757575' : '#bdbdbd'
+                          color: "#f59e0b"
                         },
                         { 
                           name: "High Risk", 
                           value: 23, 
-                          color: theme.palette.mode === 'dark' ? '#424242' : '#757575'
+                          color: "#ef4444"
                         },
                       ]}
                       cx="50%"
@@ -437,17 +446,17 @@ const Dashboard = () => {
                         { 
                           name: "Low Risk", 
                           value: 1068, 
-                          color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#e0e0e0'
+                          color: "#10b981"
                         },
                         { 
                           name: "Medium Risk", 
                           value: 156, 
-                          color: theme.palette.mode === 'dark' ? '#757575' : '#bdbdbd'
+                          color: "#f59e0b"
                         },
                         { 
                           name: "High Risk", 
                           value: 23, 
-                          color: theme.palette.mode === 'dark' ? '#424242' : '#757575'
+                          color: "#ef4444"
                         },
                       ].map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />

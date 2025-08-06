@@ -116,9 +116,9 @@ const RiskAssessment = () => {
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return theme.palette.mode === 'dark' ? '#ffffff' : '#000000';
-    if (score >= 25) return theme.palette.mode === 'dark' ? '#bdbdbd' : '#757575';
-    return theme.palette.mode === 'dark' ? '#9e9e9e' : '#424242';
+    if (score >= 40) return '#ef4444'; // Red for critical/high risk
+    if (score >= 25) return '#f59e0b'; // Orange for medium risk
+    return '#10b981'; // Green for low risk
   };
 
   const getRiskLevel = (score) => {

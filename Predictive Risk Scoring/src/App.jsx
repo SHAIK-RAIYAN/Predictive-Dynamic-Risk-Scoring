@@ -1,10 +1,12 @@
 import React, { useMemo, useState, createContext } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { SnackbarProvider } from "notistack";
 import { Toaster } from "react-hot-toast";
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn, useUser } from '@clerk/clerk-react';
+import { clerkConfig } from './lib/clerk';
 
 // Components
 import Layout from "./components/Layout/Layout";
@@ -267,7 +269,8 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+// Protected App Component
+const AppContent = () => {
   const [mode, setMode] = useState("dark");
   const colorMode = useMemo(
     () => ({
@@ -298,29 +301,47 @@ function App() {
             />
             <Router>
               <Box sx={{ display: "flex", minHeight: "100vh" }}>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route
-                      path="/risk-assessment"
-                      element={<RiskAssessment />}
-                    />
-                    <Route path="/entities" element={<EntityManagement />} />
-                    <Route
-                      path="/recommendations"
-                      element={<Recommendations />}
-                    />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/settings" element={<Settings />} />
-                  </Routes>
-                </Layout>
+                <SignedIn>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route
+                        path="/risk-assessment"
+                        element={<RiskAssessment />}
+                      />
+                      <Route path="/entities" element={<EntityManagement />} />
+                      <Route
+                        path="/recommendations"
+                        element={<Recommendations />}
+                      />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/sign-in/*" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/sign-up/*" element={<Navigate to="/dashboard" replace />} />
+                    </Routes>
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <RedirectToSignIn />
+                </SignedOut>
               </Box>
             </Router>
           </SnackbarProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </ColorModeContext.Provider>
+  );
+};
+
+function App() {
+  return (
+    <ClerkProvider 
+      publishableKey={clerkConfig.publishableKey}
+      appearance={clerkConfig.appearance}
+    >
+      <AppContent />
+    </ClerkProvider>
   );
 }
 

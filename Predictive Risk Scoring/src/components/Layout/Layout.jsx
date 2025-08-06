@@ -37,6 +37,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ColorModeContext } from "../../App";
 import { motion, AnimatePresence } from "framer-motion";
 import { StatusIndicator } from "../UI/index.jsx";
+import { useUser, useClerk, UserButton } from '@clerk/clerk-react';
+import { useState as useRealTimeState, useEffect } from 'react';
+import { realTimeService } from '../../services/firebaseService';
 
 const drawerWidth = 240;
 
@@ -56,10 +59,14 @@ const menuItems = [
 const Layout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [liveMonitoring, setLiveMonitoring] = useState(true);
+  const [realtimeData, setRealtimeData] = useRealTimeState({ entities: [], events: [] });
   const navigate = useNavigate();
   const location = useLocation();
   const colorMode = useContext(ColorModeContext);
   const theme = useTheme();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -72,6 +79,33 @@ const Layout = ({ children }) => {
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
   };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  const toggleLiveMonitoring = () => {
+    setLiveMonitoring(!liveMonitoring);
+  };
+
+  // Setup real-time monitoring
+  useEffect(() => {
+    if (!liveMonitoring) return;
+
+    const unsubscribe = realTimeService.onDashboardDataChange((update) => {
+      setRealtimeData(prev => ({
+        ...prev,
+        [update.type]: update.data
+      }));
+    });
+
+    return unsubscribe;
+  }, [liveMonitoring]);
 
   const drawer = (
     <motion.div 
@@ -97,7 +131,10 @@ const Layout = ({ children }) => {
       </Toolbar>
       
       <Box className="p-4">
-        <StatusIndicator status="online" size="small" />
+        <StatusIndicator status={liveMonitoring ? "online" : "offline"} size="small" />
+        <Typography variant="caption" className="text-gray-600 dark:text-gray-400 mt-1 block">
+          {liveMonitoring ? "Live monitoring active" : "Monitoring paused"}
+        </Typography>
       </Box>
       
       <Divider className="border-gray-200 dark:border-gray-700" />
@@ -210,13 +247,21 @@ const Layout = ({ children }) => {
                 whileTap={{ scale: 0.95 }}
               >
                 <Chip
-                  label="Live Monitoring"
+                  label={liveMonitoring ? "Live Monitoring" : "Monitoring Paused"}
                   size="small"
-                  className="bg-gray-900 text-white dark:bg-gray-100 dark:text-black font-medium animate-pulse"
+                  onClick={toggleLiveMonitoring}
+                  className={`font-medium cursor-pointer transition-all duration-300 ${
+                    liveMonitoring 
+                      ? 'bg-green-600 text-white animate-pulse hover:bg-green-700' 
+                      : 'bg-gray-600 text-white hover:bg-gray-700'
+                  }`}
                   sx={{
-                    backgroundColor: theme.palette.mode === 'dark' ? '#f5f5f5' : '#212121',
-                    color: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
+                    backgroundColor: liveMonitoring ? '#16a34a' : '#6b7280',
+                    color: '#ffffff',
                     fontWeight: 500,
+                    '&:hover': {
+                      backgroundColor: liveMonitoring ? '#15803d' : '#4b5563',
+                    },
                   }}
                 />
               </motion.div>
@@ -260,22 +305,19 @@ const Layout = ({ children }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <IconButton 
-                  onClick={handleProfileMenuOpen}
-                  className="ml-2"
-                >
-                  <Avatar 
-                    className="w-8 h-8 bg-black dark:bg-white text-white dark:text-black"
-                    sx={{ 
-                      width: 32, 
-                      height: 32,
-                      backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                      color: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
-                    }}
-                  >
-                    <AccountCircle />
-                  </Avatar>
-                </IconButton>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8",
+                      userButtonPopoverCard: "bg-white dark:bg-black border border-gray-200 dark:border-gray-700",
+                      userButtonPopoverActionButton: "text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800",
+                    },
+                  }}
+                  userProfileMode="modal"
+                  signInUrl="/sign-in"
+                  userProfileUrl="/user-profile"
+                  afterSignOutUrl="/"
+                />
               </motion.div>
             </Box>
           </motion.div>
@@ -347,65 +389,7 @@ const Layout = ({ children }) => {
         </motion.div>
       </Box>
 
-      <AnimatePresence>
-        {Boolean(anchorEl) && (
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleProfileMenuClose}
-            onClick={handleProfileMenuClose}
-            className="mt-2"
-            PaperProps={{
-              elevation: 0,
-              className: "bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg",
-              sx: {
-                overflow: "visible",
-                backgroundColor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: '12px',
-                filter: theme.palette.mode === 'dark' 
-                  ? "drop-shadow(0px 8px 32px rgba(255,255,255,0.1))"
-                  : "drop-shadow(0px 8px 32px rgba(0,0,0,0.15))",
-                mt: 1.5,
-                "& .MuiAvatar-root": {
-                  width: 32,
-                  height: 32,
-                  ml: -0.5,
-                  mr: 1,
-                },
-              },
-            }}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-            >
-              <MenuItem className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg mx-2 my-1">
-                <Avatar 
-                  className="bg-black dark:bg-white text-white dark:text-black"
-                  sx={{
-                    backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-                    color: theme.palette.mode === 'dark' ? '#000000' : '#ffffff',
-                  }}
-                />
-                <Typography className="text-black dark:text-white font-medium">
-                  Profile
-                </Typography>
-              </MenuItem>
-              <MenuItem className="hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg mx-2 my-1">
-                <ExitToApp className="text-black dark:text-white mr-2" />
-                <Typography className="text-black dark:text-white font-medium">
-                  Logout
-                </Typography>
-              </MenuItem>
-            </motion.div>
-          </Menu>
-        )}
-      </AnimatePresence>
+
     </Box>
   );
 };

@@ -123,27 +123,32 @@ export const RiskChip = ({ level, score, size = 'small' }) => {
       case 'critical':
         return {
           label: `Critical (${score})`,
-          className: 'bg-black text-white dark:bg-white dark:text-black font-semibold',
+          className: 'bg-red-500 text-white font-semibold hover:bg-red-600',
+          style: { backgroundColor: '#ef4444', color: '#ffffff' },
         };
       case 'high':
         return {
           label: `High (${score})`,
-          className: 'bg-gray-700 text-white dark:bg-gray-300 dark:text-black font-semibold',
+          className: 'bg-red-400 text-white font-semibold hover:bg-red-500',
+          style: { backgroundColor: '#f87171', color: '#ffffff' },
         };
       case 'medium':
         return {
           label: `Medium (${score})`,
-          className: 'bg-gray-500 text-white dark:bg-gray-400 dark:text-black font-medium',
+          className: 'bg-orange-500 text-white font-medium hover:bg-orange-600',
+          style: { backgroundColor: '#f59e0b', color: '#ffffff' },
         };
       case 'low':
         return {
           label: `Low (${score})`,
-          className: 'bg-gray-300 text-black dark:bg-gray-600 dark:text-white font-medium',
+          className: 'bg-green-500 text-white font-medium hover:bg-green-600',
+          style: { backgroundColor: '#10b981', color: '#ffffff' },
         };
       default:
         return {
           label: `Unknown (${score})`,
-          className: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+          className: 'bg-gray-500 text-white',
+          style: { backgroundColor: '#6b7280', color: '#ffffff' },
         };
     }
   };
@@ -153,8 +158,16 @@ export const RiskChip = ({ level, score, size = 'small' }) => {
   return (
     <Chip
       size={size}
-      {...riskProps}
-      className={`${riskProps.className} rounded-lg`}
+      label={riskProps.label}
+      className={`${riskProps.className} rounded-lg transition-all duration-200`}
+      sx={{
+        ...riskProps.style,
+        fontWeight: level === 'critical' || level === 'high' ? 600 : 500,
+        '&:hover': {
+          opacity: 0.9,
+          transform: 'scale(1.05)',
+        },
+      }}
     />
   );
 };
