@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Grid,
   Card,
@@ -17,7 +17,8 @@ import {
   Paper,
   Alert,
   Button,
-} from '@mui/material';
+  CardHeader,
+} from "@mui/material";
 import {
   TrendingUp,
   TrendingDown,
@@ -27,15 +28,26 @@ import {
   Visibility,
   Security,
   Speed,
-} from '@mui/icons-material';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useQuery } from 'react-query';
-import toast from 'react-hot-toast';
+} from "@mui/icons-material";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { useQuery } from "react-query";
+import toast from "react-hot-toast";
 
 // Mock data - replace with actual API calls
 const mockRiskData = {
   overallRiskScore: 28,
-  riskTrend: 'increasing',
+  riskTrend: "increasing",
   totalEntities: 1247,
   highRiskEntities: 23,
   mediumRiskEntities: 156,
@@ -45,36 +57,76 @@ const mockRiskData = {
 };
 
 const mockTrendData = [
-  { time: '00:00', score: 25 },
-  { time: '04:00', score: 27 },
-  { time: '08:00', score: 30 },
-  { time: '12:00', score: 28 },
-  { time: '16:00', score: 32 },
-  { time: '20:00', score: 29 },
-  { time: '24:00', score: 28 },
+  { time: "00:00", score: 25 },
+  { time: "04:00", score: 27 },
+  { time: "08:00", score: 30 },
+  { time: "12:00", score: 28 },
+  { time: "16:00", score: 32 },
+  { time: "20:00", score: 29 },
+  { time: "24:00", score: 28 },
 ];
 
 const mockTopEntities = [
-  { id: 1, name: 'user-john.doe', department: 'Engineering', riskScore: 45, status: 'high', lastActivity: '2 min ago' },
-  { id: 2, name: 'server-prod-01', department: 'Infrastructure', riskScore: 38, status: 'medium', lastActivity: '5 min ago' },
-  { id: 3, name: 'user-sarah.smith', department: 'Finance', riskScore: 42, status: 'high', lastActivity: '8 min ago' },
-  { id: 4, name: 'database-main', department: 'IT', riskScore: 35, status: 'medium', lastActivity: '12 min ago' },
-  { id: 5, name: 'user-mike.wilson', department: 'HR', riskScore: 31, status: 'medium', lastActivity: '15 min ago' },
+  {
+    id: 1,
+    name: "user-john.doe",
+    department: "Engineering",
+    riskScore: 45,
+    status: "high",
+    lastActivity: "2 min ago",
+  },
+  {
+    id: 2,
+    name: "server-prod-01",
+    department: "Infrastructure",
+    riskScore: 38,
+    status: "medium",
+    lastActivity: "5 min ago",
+  },
+  {
+    id: 3,
+    name: "user-sarah.smith",
+    department: "Finance",
+    riskScore: 42,
+    status: "high",
+    lastActivity: "8 min ago",
+  },
+  {
+    id: 4,
+    name: "database-main",
+    department: "IT",
+    riskScore: 35,
+    status: "medium",
+    lastActivity: "12 min ago",
+  },
+  {
+    id: 5,
+    name: "user-mike.wilson",
+    department: "HR",
+    riskScore: 31,
+    status: "medium",
+    lastActivity: "15 min ago",
+  },
 ];
 
 const riskDistributionData = [
-  { name: 'Low Risk', value: 1068, color: '#4caf50' },
-  { name: 'Medium Risk', value: 156, color: '#ff9800' },
-  { name: 'High Risk', value: 23, color: '#f44336' },
+  { name: "Low Risk", value: 1068, color: "#4caf50" },
+  { name: "Medium Risk", value: 156, color: "#ff9800" },
+  { name: "High Risk", value: 23, color: "#f44336" },
 ];
 
 const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Mock API query - replace with actual API call
-  const { data: dashboardData, isLoading, refetch } = useQuery(
-    'dashboardData',
-    () => new Promise((resolve) => setTimeout(() => resolve(mockRiskData), 1000)),
+  const {
+    data: dashboardData,
+    isLoading,
+    refetch,
+  } = useQuery(
+    "dashboardData",
+    () =>
+      new Promise((resolve) => setTimeout(() => resolve(mockRiskData), 1000)),
     {
       refetchInterval: 30000, // Refresh every 30 seconds
     }
@@ -84,24 +136,24 @@ const Dashboard = () => {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
-    toast.success('Dashboard refreshed successfully');
+    toast.success("Dashboard refreshed successfully");
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return '#f44336';
-    if (score >= 25) return '#ff9800';
-    return '#4caf50';
+    if (score >= 40) return "#f44336";
+    if (score >= 25) return "#ff9800";
+    return "#4caf50";
   };
 
   const getRiskStatus = (score) => {
-    if (score >= 40) return 'High';
-    if (score >= 25) return 'Medium';
-    return 'Low';
+    if (score >= 40) return "High";
+    if (score >= 25) return "Medium";
+    return "Low";
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ width: '100%' }}>
+      <Box sx={{ width: "100%" }}>
         <LinearProgress />
       </Box>
     );
@@ -110,7 +162,13 @@ const Dashboard = () => {
   return (
     <Box>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}>
         <Typography variant="h4" component="h1">
           Risk Assessment Dashboard
         </Typography>
@@ -118,8 +176,7 @@ const Dashboard = () => {
           variant="outlined"
           startIcon={<Refresh />}
           onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
+          disabled={isRefreshing}>
           Refresh
         </Button>
       </Box>
@@ -127,8 +184,11 @@ const Dashboard = () => {
       {/* Alert Banner */}
       <Alert severity="warning" sx={{ mb: 3 }}>
         <Typography variant="body2">
-          <strong>High Risk Alert:</strong> 3 entities have exceeded risk threshold. 
-          <Button size="small" sx={{ ml: 1 }}>View Details</Button>
+          <strong>High Risk Alert:</strong> 3 entities have exceeded risk
+          threshold.
+          <Button size="small" sx={{ ml: 1 }}>
+            View Details
+          </Button>
         </Typography>
       </Alert>
 
@@ -137,26 +197,39 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
                     Overall Risk Score
                   </Typography>
-                  <Typography variant="h4" component="div" sx={{ color: getRiskColor(dashboardData.overallRiskScore) }}>
+                  <Typography
+                    variant="h4"
+                    component="div"
+                    sx={{
+                      color: getRiskColor(dashboardData.overallRiskScore),
+                    }}>
                     {dashboardData.overallRiskScore}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                    {dashboardData.riskTrend === 'increasing' ? (
-                      <TrendingUp sx={{ color: '#f44336', mr: 1 }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+                    {dashboardData.riskTrend === "increasing" ? (
+                      <TrendingUp sx={{ color: "#f44336", mr: 1 }} />
                     ) : (
-                      <TrendingDown sx={{ color: '#4caf50', mr: 1 }} />
+                      <TrendingDown sx={{ color: "#4caf50", mr: 1 }} />
                     )}
                     <Typography variant="body2" color="textSecondary">
-                      {dashboardData.riskTrend === 'increasing' ? '+3.2%' : '-1.8%'} from yesterday
+                      {dashboardData.riskTrend === "increasing"
+                        ? "+3.2%"
+                        : "-1.8%"}{" "}
+                      from yesterday
                     </Typography>
                   </Box>
                 </Box>
-                <Security sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Security sx={{ fontSize: 40, color: "primary.main" }} />
               </Box>
             </CardContent>
           </Card>
@@ -165,7 +238,12 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
                     Total Entities
@@ -173,11 +251,14 @@ const Dashboard = () => {
                   <Typography variant="h4" component="div">
                     {dashboardData.totalEntities.toLocaleString()}
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mt: 1 }}>
                     Monitored assets
                   </Typography>
                 </Box>
-                <Speed sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Speed sx={{ fontSize: 40, color: "primary.main" }} />
               </Box>
             </CardContent>
           </Card>
@@ -186,19 +267,30 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
                     High Risk Entities
                   </Typography>
-                  <Typography variant="h4" component="div" sx={{ color: '#f44336' }}>
+                  <Typography
+                    variant="h4"
+                    component="div"
+                    sx={{ color: "#f44336" }}>
                     {dashboardData.highRiskEntities}
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mt: 1 }}>
                     Require immediate attention
                   </Typography>
                 </Box>
-                <Warning sx={{ fontSize: 40, color: '#f44336' }} />
+                <Warning sx={{ fontSize: 40, color: "#f44336" }} />
               </Box>
             </CardContent>
           </Card>
@@ -207,7 +299,12 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}>
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
                     Recent Alerts
@@ -215,11 +312,14 @@ const Dashboard = () => {
                   <Typography variant="h4" component="div">
                     {dashboardData.recentAlerts}
                   </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ mt: 1 }}>
                     Last 24 hours
                   </Typography>
                 </Box>
-                <CheckCircle sx={{ fontSize: 40, color: '#4caf50' }} />
+                <CheckCircle sx={{ fontSize: 40, color: "#4caf50" }} />
               </Box>
             </CardContent>
           </Card>
@@ -246,7 +346,7 @@ const Dashboard = () => {
                     dataKey="score"
                     stroke="#2196f3"
                     strokeWidth={2}
-                    dot={{ fill: '#2196f3', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: "#2196f3", strokeWidth: 2, r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -256,11 +356,19 @@ const Dashboard = () => {
 
         {/* Risk Distribution */}
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card
+            style={{
+              boxShadow: "0 2px 16px rgba(0,0,0,0.08)",
+              borderRadius: 16,
+            }}>
+            <CardHeader
+              title={
+                <Typography variant="h6" gutterBottom>
+                  Risk Distribution
+                </Typography>
+              }
+            />
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Risk Distribution
-              </Typography>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -269,8 +377,7 @@ const Dashboard = () => {
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
+                    label={({ name, value }) => `${name}: ${value}`}>
                     {riskDistributionData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -289,7 +396,9 @@ const Dashboard = () => {
               <Typography variant="h6" gutterBottom>
                 Top Risk Entities
               </Typography>
-              <TableContainer component={Paper} sx={{ backgroundColor: 'transparent' }}>
+              <TableContainer
+                component={Paper}
+                sx={{ backgroundColor: "transparent" }}>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -311,11 +420,13 @@ const Dashboard = () => {
                         </TableCell>
                         <TableCell>{entity.department}</TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
                             <Typography
                               variant="body2"
-                              sx={{ color: getRiskColor(entity.riskScore), mr: 1 }}
-                            >
+                              sx={{
+                                color: getRiskColor(entity.riskScore),
+                                mr: 1,
+                              }}>
                               {entity.riskScore}
                             </Typography>
                             <Chip
@@ -323,7 +434,7 @@ const Dashboard = () => {
                               size="small"
                               sx={{
                                 backgroundColor: getRiskColor(entity.riskScore),
-                                color: 'white',
+                                color: "white",
                               }}
                             />
                           </Box>
@@ -332,7 +443,9 @@ const Dashboard = () => {
                           <Chip
                             label={entity.status}
                             size="small"
-                            color={entity.status === 'high' ? 'error' : 'warning'}
+                            color={
+                              entity.status === "high" ? "error" : "warning"
+                            }
                           />
                         </TableCell>
                         <TableCell>{entity.lastActivity}</TableCell>
@@ -354,4 +467,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Box,
   Drawer,
@@ -31,6 +31,9 @@ import {
   ExitToApp,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ColorModeContext } from "../../App";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 
 const drawerWidth = 240;
 
@@ -52,6 +55,7 @@ const Layout = ({ children }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const colorMode = useContext(ColorModeContext);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -143,6 +147,18 @@ const Layout = ({ children }) => {
               <Badge badgeContent={4} color="error">
                 <NotificationsIcon />
               </Badge>
+            </IconButton>
+            {/* Theme toggle button */}
+            <IconButton
+              sx={{ ml: 1 }}
+              onClick={colorMode.toggleColorMode}
+              color="inherit">
+              {window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches ? (
+                <Brightness7Icon />
+              ) : (
+                <Brightness4Icon />
+              )}
             </IconButton>
             <IconButton onClick={handleProfileMenuOpen} sx={{ ml: 1 }}>
               <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
