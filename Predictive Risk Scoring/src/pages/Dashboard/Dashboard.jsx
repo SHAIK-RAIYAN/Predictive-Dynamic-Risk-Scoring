@@ -57,6 +57,7 @@ import {
   StatusIndicator,
   withFadeIn
 } from "../../components/UI/index.jsx";
+import LiveMonitoring from "../../components/LiveMonitoring/LiveMonitoring";
 
 // Mock data - replace with actual API calls
 const mockRiskData = {
@@ -340,7 +341,7 @@ const Dashboard = () => {
       >
         <Grid container spacing={3} className="mb-8">
           {/* Risk Trend Chart */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12} md={6}>
             <StyledCard variant="hover" className="p-6">
               <CardContent>
                 <Typography 
@@ -397,8 +398,21 @@ const Dashboard = () => {
             </StyledCard>
           </Grid>
 
-          {/* Risk Distribution */}
-          <Grid item xs={12} md={4}>
+          {/* Live Monitoring */}
+          <Grid item xs={12} md={6}>
+            <LiveMonitoring />
+          </Grid>
+        </Grid>
+      </motion.div>
+
+      {/* Risk Distribution */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Grid container spacing={3} className="mb-8">
+          <Grid item xs={12}>
             <StyledCard variant="hover" className="p-6">
               <CardHeader
                 title={

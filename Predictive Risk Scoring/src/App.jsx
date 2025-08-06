@@ -1,4 +1,4 @@
-import React, { useMemo, useState, createContext } from "react";
+import React, { useMemo, useState, createContext, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
@@ -7,6 +7,10 @@ import { SnackbarProvider } from "notistack";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn, useUser } from '@clerk/clerk-react';
 import { clerkConfig } from './lib/clerk';
+
+// Services
+import firebaseService from './services/firebaseService';
+import mlService from './services/mlService';
 
 // Components
 import Layout from "./components/Layout/Layout";
@@ -281,6 +285,24 @@ const AppContent = () => {
     []
   );
   const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Initialize Firebase sample data
+        await firebaseService.initializeSampleData();
+        
+        // Wait a bit for data to be available, then initialize ML models
+        setTimeout(async () => {
+          await mlService.initializeModels();
+        }, 2000);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
+    };
+
+    initializeApp();
+  }, []);
 
   return (
     <ColorModeContext.Provider value={colorMode}>

@@ -3,17 +3,19 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
+import { getDatabase } from 'firebase/database';
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v9-compat and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "risk-scoring-demo.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "risk-scoring-demo",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "risk-scoring-demo.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abcdef123456",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-ABCDEF123"
+  apiKey: "AIzaSyBhvu9zVtcbaWnq_84rmTdDSpb389oHEN0",
+  authDomain: "riskguardai-0123.firebaseapp.com",
+  projectId: "riskguardai-0123",
+  storageBucket: "riskguardai-0123.firebasestorage.app",
+  messagingSenderId: "454935417856",
+  appId: "1:454935417856:web:3caed9e15aa182b94ff4e5",
+  measurementId: "G-NCFMBLFVMD",
+  databaseURL: "https://riskguardai-0123-default-rtdb.firebaseio.com"
 };
 
 // Initialize Firebase
@@ -21,6 +23,9 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firestore
 export const db = getFirestore(app);
+
+// Initialize Realtime Database
+export const realtimeDb = getDatabase(app);
 
 // Initialize Auth
 export const auth = getAuth(app);

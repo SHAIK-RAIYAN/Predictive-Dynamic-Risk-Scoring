@@ -35,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation } from 'react-query';
 import toast from 'react-hot-toast';
+import UserProfile from '../../components/UserProfile/UserProfile';
 
 // Mock settings data
 const mockSettings = {
@@ -138,8 +139,13 @@ const Settings = () => {
       )}
 
       <Grid container spacing={3}>
+        {/* User Profile */}
+        <Grid item xs={12} md={4}>
+          <UserProfile />
+        </Grid>
+
         {/* Risk Scoring Configuration */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
