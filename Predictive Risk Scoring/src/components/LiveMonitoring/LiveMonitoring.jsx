@@ -32,21 +32,14 @@ const LiveMonitoring = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Subscribe to live monitoring data
-    const unsubscribeMonitoring = firebaseService.subscribeToLiveMonitoring((data) => {
-      setMonitoringData(data);
-      if (data?.isActive !== undefined) {
-        setIsActive(data.isActive);
-      }
+    // Subscribe to entities and events for real-time updates
+    const unsubscribeEntities = firebaseService.subscribeToEntities((entities) => {
+      setUsers(entities.filter(e => e.type === 'User'));
     });
-
-    // Subscribe to users and events for real-time updates
-    const unsubscribeUsers = firebaseService.subscribeToUsers(setUsers);
     const unsubscribeEvents = firebaseService.subscribeToRiskEvents(setEvents);
 
     return () => {
-      unsubscribeMonitoring();
-      unsubscribeUsers();
+      unsubscribeEntities();
       unsubscribeEvents();
     };
   }, []);
@@ -55,8 +48,9 @@ const LiveMonitoring = () => {
     setLoading(true);
     try {
       const newStatus = !isActive;
-      await firebaseService.updateLiveMonitoringStatus(newStatus);
       setIsActive(newStatus);
+      // Simulate monitoring status update
+      console.log('Monitoring status updated:', newStatus);
     } catch (error) {
       console.error('Error toggling monitoring:', error);
     } finally {
@@ -67,8 +61,8 @@ const LiveMonitoring = () => {
   const handleRefresh = async () => {
     setLoading(true);
     try {
-      // Force refresh by updating the monitoring status
-      await firebaseService.updateLiveMonitoringStatus(isActive);
+      // Simulate refresh
+      console.log('Refreshing monitoring data');
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {

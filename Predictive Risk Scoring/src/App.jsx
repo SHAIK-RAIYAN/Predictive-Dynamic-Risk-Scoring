@@ -289,8 +289,8 @@ const AppContent = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Initialize Firebase sample data
-        await firebaseService.initializeSampleData();
+        // Firebase data is automatically initialized in the service
+        console.log('App initialized successfully');
         
         // Wait a bit for data to be available, then initialize ML models
         setTimeout(async () => {
