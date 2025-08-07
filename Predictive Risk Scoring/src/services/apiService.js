@@ -1,5 +1,6 @@
 // API Service for connecting to Firebase and backend
 import firebaseService from './firebaseService';
+import geminiService from './geminiService';
 
 const API_BASE_URL = 'http://localhost:8080/api/risk';
 
@@ -432,53 +433,17 @@ class ApiService {
   // Gemini AI Integration for Security Recommendations
   async getAIRecommendations(entityId, riskData) {
     try {
-      const prompt = `
-        Based on the following security risk data, provide specific, actionable security recommendations:
-        
-        Entity ID: ${entityId}
-        Risk Score: ${riskData.overallScore}
-        Risk Level: ${riskData.riskLevel}
-        Risk Factors: ${JSON.stringify(riskData.factors)}
-        
-        Please provide 3-5 specific, actionable security recommendations with:
-        1. Clear action items
-        2. Priority level (High/Medium/Low)
-        3. Estimated effort (Low/Medium/High)
-        4. Expected impact on risk reduction
-        5. Implementation timeline
-        
-        Format as JSON array with objects containing: title, description, priority, effort, impact, timeline
-      `;
-
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer AIzaSyDq4UeHyhxoeSpWrZBwvYEjQAdrwnFPgnk`
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Gemini API call failed');
-      }
-
-      const data = await response.json();
-      const aiResponse = data.candidates[0].content.parts[0].text;
+      // Get entity data from Firebase
+      const entities = await firebaseService.getEntities();
+      const entity = entities.find(e => e.id === entityId);
       
-      // Try to parse JSON from AI response
-      try {
-        return JSON.parse(aiResponse);
-      } catch (e) {
-        // If parsing fails, return formatted recommendations
-        return this.formatAIRecommendations(aiResponse);
+      if (!entity) {
+        throw new Error('Entity not found');
       }
+
+      // Use Gemini service for AI recommendations
+      const aiRecommendations = await geminiService.getRiskRecommendations(entity, riskData);
+      return aiRecommendations;
     } catch (error) {
       console.error('AI recommendation error:', error);
       return this.getFallbackRecommendations(riskData);
@@ -532,6 +497,16 @@ class ApiService {
     });
     
     return recommendations;
+  }
+
+  // Add new entity to Firebase
+  async addEntity(entityData) {
+    try {
+      return await firebaseService.addEntity(entityData);
+    } catch (error) {
+      console.error('Error adding entity:', error);
+      throw error;
+    }
   }
 }
 

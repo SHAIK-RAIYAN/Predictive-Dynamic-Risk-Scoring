@@ -69,6 +69,9 @@ const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [highRiskDetailsDialogOpen, setHighRiskDetailsDialogOpen] = useState(false);
+  const [highRiskEntities, setHighRiskEntities] = useState([]);
+  const [liveMonitoringActive, setLiveMonitoringActive] = useState(true);
   const theme = useTheme();
 
   // Real API queries
@@ -137,6 +140,23 @@ const Dashboard = () => {
       setDetailsDialogOpen(true);
     } catch (error) {
       toast.error("Failed to load entity details", {
+        style: {
+          background: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
+        },
+      });
+    }
+  };
+
+  const handleViewHighRiskDetails = async () => {
+    try {
+      const entities = await apiService.getAllEntities();
+      const highRisk = entities.filter(entity => entity.riskScore >= 40);
+      setHighRiskEntities(highRisk);
+      setHighRiskDetailsDialogOpen(true);
+    } catch (error) {
+      toast.error("Failed to load high risk entities", {
         style: {
           background: theme.palette.background.paper,
           color: theme.palette.text.primary,
@@ -260,6 +280,7 @@ const Dashboard = () => {
             <AnimatedButton 
               size="small" 
               variant="contained"
+              onClick={() => handleViewHighRiskDetails()}
               className="ml-4 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
             >
               View Details
@@ -391,7 +412,10 @@ const Dashboard = () => {
 
           {/* Live Monitoring */}
           <Grid item xs={12} md={6}>
-            <LiveMonitoring />
+            <LiveMonitoring 
+              isActive={liveMonitoringActive}
+              onToggle={() => setLiveMonitoringActive(!liveMonitoringActive)}
+            />
           </Grid>
         </Grid>
       </motion.div>
@@ -651,6 +675,93 @@ const Dashboard = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailsDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* High Risk Details Dialog */}
+      <Dialog 
+        open={highRiskDetailsDialogOpen} 
+        onClose={() => setHighRiskDetailsDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            High Risk Entities ({highRiskEntities.length})
+          </Typography>
+          <IconButton onClick={() => setHighRiskDetailsDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4">
+            {highRiskEntities.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell className="font-semibold">Entity Name</TableCell>
+                      <TableCell className="font-semibold">Department</TableCell>
+                      <TableCell className="font-semibold">Risk Score</TableCell>
+                      <TableCell className="font-semibold">Status</TableCell>
+                      <TableCell className="font-semibold">Last Activity</TableCell>
+                      <TableCell className="font-semibold">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {highRiskEntities.map((entity) => (
+                      <TableRow key={entity.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <TableCell>
+                          <Typography variant="body2" className="font-medium">
+                            {entity.name}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                            {entity.department}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box className="flex items-center gap-2">
+                            <Typography variant="body2" className="font-bold text-red-600">
+                              {entity.riskScore}
+                            </Typography>
+                            <RiskChip level="critical" score={entity.riskScore} />
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <StatusIndicator status={entity.status} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                            {entity.lastActivity}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleViewDetails(entity)}
+                            className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                          >
+                            <Visibility />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Typography variant="body1" className="text-center py-8 text-gray-600 dark:text-gray-400">
+                No high risk entities found
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHighRiskDetailsDialogOpen(false)}>
             Close
           </Button>
         </DialogActions>

@@ -55,10 +55,10 @@ const menuItems = [
   { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
 ];
 
-const Layout = ({ children }) => {
+const Layout = ({ children, liveMonitoringActive, onLiveMonitoringToggle }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [liveMonitoring, setLiveMonitoring] = useState(true);
+  const [liveMonitoring, setLiveMonitoring] = useState(liveMonitoringActive ?? true);
   const [realtimeData, setRealtimeData] = useRealTimeState({ entities: [], events: [] });
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,7 +89,9 @@ const Layout = ({ children }) => {
   };
 
   const toggleLiveMonitoring = () => {
-    setLiveMonitoring(!liveMonitoring);
+    const newStatus = !liveMonitoring;
+    setLiveMonitoring(newStatus);
+    onLiveMonitoringToggle && onLiveMonitoringToggle(newStatus);
   };
 
   // Setup real-time monitoring

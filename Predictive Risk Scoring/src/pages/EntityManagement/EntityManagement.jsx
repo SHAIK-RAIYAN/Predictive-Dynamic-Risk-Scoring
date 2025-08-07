@@ -124,8 +124,8 @@ const EntityManagement = () => {
         lastActivity: 'Just now',
       };
 
-      // Add to Firebase (this would be a real API call)
-      console.log('Adding entity:', entityData);
+      // Add to Firebase database
+      await apiService.addEntity(entityData);
       
       toast.success('Entity added successfully!');
       setAddEntityDialogOpen(false);

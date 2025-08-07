@@ -24,8 +24,7 @@ import {
 } from '@mui/icons-material';
 import firebaseService from '../../services/firebaseService';
 
-const LiveMonitoring = () => {
-  const [isActive, setIsActive] = useState(false);
+const LiveMonitoring = ({ isActive, onToggle }) => {
   const [monitoringData, setMonitoringData] = useState(null);
   const [users, setUsers] = useState([]);
   const [events, setEvents] = useState([]);
@@ -47,10 +46,9 @@ const LiveMonitoring = () => {
   const handleToggleMonitoring = async () => {
     setLoading(true);
     try {
-      const newStatus = !isActive;
-      setIsActive(newStatus);
+      onToggle && onToggle();
       // Simulate monitoring status update
-      console.log('Monitoring status updated:', newStatus);
+      console.log('Monitoring status updated:', !isActive);
     } catch (error) {
       console.error('Error toggling monitoring:', error);
     } finally {
