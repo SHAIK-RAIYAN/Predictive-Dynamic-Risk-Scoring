@@ -45,7 +45,15 @@ const EntityManagement = () => {
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [addEntityDialogOpen, setAddEntityDialogOpen] = useState(false);
+  const [editEntityDialogOpen, setEditEntityDialogOpen] = useState(false);
   const [newEntity, setNewEntity] = useState({
+    name: '',
+    type: 'User',
+    department: '',
+    email: '',
+    ipAddress: '',
+  });
+  const [editingEntity, setEditingEntity] = useState({
     name: '',
     type: 'User',
     department: '',
@@ -138,6 +146,60 @@ const EntityManagement = () => {
       });
     } catch (error) {
       toast.error('Failed to add entity');
+    }
+  };
+
+  const handleEditEntity = (entity) => {
+    setEditingEntity({
+      name: entity.name,
+      type: entity.type,
+      department: entity.department,
+      email: entity.email || '',
+      ipAddress: entity.ipAddress || '',
+    });
+    setEditEntityDialogOpen(true);
+  };
+
+  const handleUpdateEntity = async () => {
+    try {
+      if (!editingEntity.name.trim()) {
+        toast.error('Please enter entity name');
+        return;
+      }
+
+      const updateData = {
+        name: editingEntity.name,
+        type: editingEntity.type,
+        department: editingEntity.department,
+        email: editingEntity.email,
+        ipAddress: editingEntity.ipAddress,
+      };
+
+      // Update in Firebase database
+      await apiService.updateEntity(selectedEntity.id, updateData);
+      
+      toast.success('Entity updated successfully!');
+      setEditEntityDialogOpen(false);
+      setEditingEntity({
+        name: '',
+        type: 'User',
+        department: '',
+        email: '',
+        ipAddress: '',
+      });
+    } catch (error) {
+      toast.error('Failed to update entity');
+    }
+  };
+
+  const handleDeleteEntity = async (entity) => {
+    try {
+      // Delete from Firebase database
+      await apiService.deleteEntity(entity.id);
+      
+      toast.success('Entity deleted successfully!');
+    } catch (error) {
+      toast.error('Failed to delete entity');
     }
   };
 
@@ -542,6 +604,84 @@ const EntityManagement = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Edit Entity Dialog */}
+      <Dialog 
+        open={editEntityDialogOpen} 
+        onClose={() => setEditEntityDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="flex justify-between items-center">
+          <Typography variant="h6" className="font-semibold">
+            Edit Entity: {selectedEntity?.name}
+          </Typography>
+          <IconButton onClick={() => setEditEntityDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box className="space-y-4 mt-2">
+            <TextField
+              fullWidth
+              label="Entity Name"
+              variant="outlined"
+              value={editingEntity.name}
+              onChange={(e) => setEditingEntity({...editingEntity, name: e.target.value})}
+              placeholder="Enter entity name"
+            />
+            <FormControl fullWidth>
+              <InputLabel>Entity Type</InputLabel>
+              <Select
+                value={editingEntity.type}
+                onChange={(e) => setEditingEntity({...editingEntity, type: e.target.value})}
+                label="Entity Type"
+              >
+                <MenuItem value="User">User</MenuItem>
+                <MenuItem value="Server">Server</MenuItem>
+                <MenuItem value="Database">Database</MenuItem>
+                <MenuItem value="Application">Application</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Department"
+              variant="outlined"
+              value={editingEntity.department}
+              onChange={(e) => setEditingEntity({...editingEntity, department: e.target.value})}
+              placeholder="Enter department"
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              variant="outlined"
+              value={editingEntity.email}
+              onChange={(e) => setEditingEntity({...editingEntity, email: e.target.value})}
+              placeholder="Enter email address"
+            />
+            <TextField
+              fullWidth
+              label="IP Address"
+              variant="outlined"
+              value={editingEntity.ipAddress}
+              onChange={(e) => setEditingEntity({...editingEntity, ipAddress: e.target.value})}
+              placeholder="Enter IP address"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditEntityDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained"
+            onClick={handleUpdateEntity}
+            className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+          >
+            Update Entity
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -555,13 +695,13 @@ const EntityManagement = () => {
           <Visibility className="mr-2" /> View Details
         </MenuItem>
         <MenuItem onClick={() => {
-          toast.success('Edit functionality coming soon');
+          handleEditEntity(selectedEntity);
           handleMenuClose();
         }}>
           <Edit className="mr-2" /> Edit
         </MenuItem>
         <MenuItem onClick={() => {
-          toast.success('Delete functionality coming soon');
+          handleDeleteEntity(selectedEntity);
           handleMenuClose();
         }}>
           <Delete className="mr-2" /> Delete

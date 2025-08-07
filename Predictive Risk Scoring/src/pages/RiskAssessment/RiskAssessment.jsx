@@ -47,6 +47,7 @@ const RiskAssessment = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [entityId, setEntityId] = useState('');
   const [isAssessing, setIsAssessing] = useState(false);
+  const [entityNotFound, setEntityNotFound] = useState(false);
   const theme = useTheme();
 
   // Real API queries
@@ -86,10 +87,12 @@ const RiskAssessment = () => {
       const entityExists = entities.some(entity => entity.id === entityId.trim());
       
       if (!entityExists) {
-        toast.error('Entity ID not found in database. Please enter a valid entity ID.');
+        setEntityNotFound(true);
+        setIsAssessing(false);
         return;
       }
 
+      setEntityNotFound(false);
       setIsAssessing(true);
       assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
@@ -205,6 +208,25 @@ const RiskAssessment = () => {
       </motion.div>
 
       {/* Assessment Results */}
+      {entityNotFound && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <StyledCard variant="hover" className="p-6">
+            <CardContent className="text-center">
+              <Typography variant="h6" className="font-semibold text-red-600 mb-4">
+                No data on this entity in database
+              </Typography>
+              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                The entity ID "{entityId}" was not found in our database. Please enter a valid entity ID.
+              </Typography>
+            </CardContent>
+          </StyledCard>
+        </motion.div>
+      )}
+
       {riskData && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}

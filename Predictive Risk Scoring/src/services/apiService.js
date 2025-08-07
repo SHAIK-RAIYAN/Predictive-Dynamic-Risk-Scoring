@@ -508,6 +508,26 @@ class ApiService {
       throw error;
     }
   }
+
+  // Update entity in Firebase
+  async updateEntity(entityId, updateData) {
+    try {
+      return await firebaseService.updateEntity(entityId, updateData);
+    } catch (error) {
+      console.error('Error updating entity:', error);
+      throw error;
+    }
+  }
+
+  // Delete entity from Firebase
+  async deleteEntity(entityId) {
+    try {
+      return await firebaseService.deleteEntity(entityId);
+    } catch (error) {
+      console.error('Error deleting entity:', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance
