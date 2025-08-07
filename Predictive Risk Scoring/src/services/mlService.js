@@ -63,6 +63,13 @@ class IsolationForest {
     return indices;
   }
 
+  /**
+   * Calculates the expected path length of a randomly inserted point
+   * in a binary search tree of n points.
+   *
+   * @param {number} n - number of points in the tree
+   * @returns {number} the expected path length of a randomly inserted point
+   */
   getExpectedPathLength(n) {
     if (n <= 1) return 0;
     if (n == 2) return 1;

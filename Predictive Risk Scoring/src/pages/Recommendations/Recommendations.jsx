@@ -62,6 +62,10 @@ const Recommendations = () => {
     timeline: '1 week',
     assignee: '',
   });
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   const { data: recommendations, isLoading, error } = useQuery(
     'recommendations',
@@ -73,11 +77,20 @@ const Recommendations = () => {
 
   const askAIMutation = useMutation(
     async (recommendation) => {
-      // Get AI recommendations using Gemini
-      const aiResponse = await apiService.getAIRecommendations('user-john.doe', {
-        overallScore: 35,
-        riskLevel: 'High',
-        factors: recommendation.factors || []
+      // Get comprehensive AI recommendations using Gemini
+      const entityId = recommendation.entityId || 'user-john.doe';
+      const riskData = await apiService.assessEntityRisk(entityId);
+      
+      // Enhanced AI request with more context
+      const aiResponse = await apiService.getAIRecommendations(entityId, {
+        ...riskData,
+        recommendation: recommendation,
+        context: {
+          category: recommendation.category,
+          priority: recommendation.priority,
+          affectedEntities: recommendation.affectedEntities,
+          estimatedRiskReduction: recommendation.estimatedRiskReduction
+        }
       });
       return aiResponse;
     },
@@ -85,10 +98,10 @@ const Recommendations = () => {
       onSuccess: (aiResponse) => {
         toast.success('AI recommendations generated successfully');
         setSelectedRecommendation({ ...selectedRecommendation, aiResponse });
-        setImplementationDialogOpen(false);
       },
-      onError: () => {
-        toast.error('Failed to get AI recommendations');
+      onError: (error) => {
+        console.error('AI recommendation error:', error);
+        toast.error('Failed to get AI recommendations. Please try again.');
       },
     }
   );
@@ -548,4 +561,4 @@ const Recommendations = () => {
   );
 };
 
-export default Recommendations; 
+export default Recommendations;
