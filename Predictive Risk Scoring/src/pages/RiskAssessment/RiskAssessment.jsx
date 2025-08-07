@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Grid,
   CardContent,
@@ -18,7 +18,7 @@ import {
   Tab,
   useTheme,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Security,
   Warning,
@@ -29,15 +29,15 @@ import {
   Search,
   TrendingUp,
   BarChart,
-} from '@mui/icons-material';
-import { useQuery, useMutation } from 'react-query';
-import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  StyledCard, 
-  MetricCard, 
-  RiskChip, 
-  LoadingBar, 
+} from "@mui/icons-material";
+import { useQuery, useMutation } from "react-query";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  StyledCard,
+  MetricCard,
+  RiskChip,
+  LoadingBar,
   AnimatedButton,
   StatusIndicator,
 } from "../../components/UI/index.jsx";
@@ -45,14 +45,18 @@ import apiService from "../../services/apiService";
 
 const RiskAssessment = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-  const [entityId, setEntityId] = useState('');
+  const [entityId, setEntityId] = useState("");
   const [isAssessing, setIsAssessing] = useState(false);
   const [entityNotFound, setEntityNotFound] = useState(false);
   const theme = useTheme();
 
   // Real API queries
-  const { data: riskData, isLoading, refetch } = useQuery(
-    ['riskAssessment', entityId],
+  const {
+    data: riskData,
+    isLoading,
+    refetch,
+  } = useQuery(
+    ["riskAssessment", entityId],
     () => apiService.assessEntityRisk(entityId),
     {
       enabled: !!entityId,
@@ -64,13 +68,13 @@ const RiskAssessment = () => {
     (entityId) => apiService.assessEntityRisk(entityId),
     {
       onSuccess: () => {
-        toast.success('Risk assessment completed successfully');
+        toast.success("Risk assessment completed successfully");
         setIsAssessing(false);
         setEntityNotFound(false);
         refetch();
       },
       onError: (error) => {
-        toast.error('Risk assessment failed');
+        toast.error("Risk assessment failed");
         setIsAssessing(false);
       },
     }
@@ -78,7 +82,7 @@ const RiskAssessment = () => {
 
   const handleAssessRisk = async () => {
     if (!entityId.trim()) {
-      toast.error('Please enter an entity ID');
+      toast.error("Please enter an entity ID");
       return;
     }
 
@@ -88,12 +92,14 @@ const RiskAssessment = () => {
     try {
       // First check if entity exists in Firebase database
       const entities = await apiService.getAllEntities();
-      console.log('All entities:', entities);
-      console.log('Searching for entity ID:', entityId.trim());
-      
-      const entityExists = entities.some(entity => entity.id === entityId.trim());
-      console.log('Entity exists:', entityExists);
-      
+      console.log("All entities:", entities);
+      console.log("Searching for entity ID:", entityId.trim());
+
+      const entityExists = entities.some(
+        (entity) => entity.id === entityId.trim()
+      );
+      console.log("Entity exists:", entityExists);
+
       if (!entityExists) {
         setEntityNotFound(true);
         setIsAssessing(false);
@@ -103,16 +109,16 @@ const RiskAssessment = () => {
       // If entity exists, proceed with risk assessment
       assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
-      console.error('Error in handleAssessRisk:', error);
-      toast.error('Failed to validate entity ID');
+      console.error("Error in handleAssessRisk:", error);
+      toast.error("Failed to validate entity ID");
       setIsAssessing(false);
     }
   };
 
   const getRiskColor = (score) => {
-    if (score >= 40) return '#ef4444';
-    if (score >= 25) return '#f59e0b';
-    return '#10b981';
+    if (score >= 40) return "#ef4444";
+    if (score >= 25) return "#f59e0b";
+    return "#10b981";
   };
 
   const getRiskLevel = (score) => {
@@ -134,26 +140,22 @@ const RiskAssessment = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="space-y-6"
-    >
+      className="space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-8"
-      >
-        <Typography 
-          variant="h4" 
+        className="mb-8">
+        <Typography
+          variant="h4"
           component="h1"
-          className="font-bold text-black dark:text-white mb-2 tracking-tight"
-        >
+          className="font-bold text-black dark:text-white mb-2 tracking-tight">
           Risk Assessment
         </Typography>
-        <Typography 
-          variant="body1" 
-          className="text-gray-600 dark:text-gray-400"
-        >
+        <Typography
+          variant="body1"
+          className="text-gray-600 dark:text-gray-400">
           Assess security risk for individual entities using AI-powered analysis
         </Typography>
       </motion.div>
@@ -162,17 +164,15 @@ const RiskAssessment = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
+        transition={{ duration: 0.5, delay: 0.1 }}>
         <StyledCard variant="hover" className="p-6">
           <CardContent>
-            <Typography 
-              variant="h6" 
-              className="font-semibold text-black dark:text-white mb-4"
-            >
+            <Typography
+              variant="h6"
+              className="font-semibold text-black dark:text-white mb-4">
               Entity Assessment
             </Typography>
-            
+
             <Box className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
               <TextField
                 fullWidth
@@ -183,11 +183,11 @@ const RiskAssessment = () => {
                 placeholder="Enter entity ID (e.g., user-john.doe, server-prod-01)"
                 className="sm:flex-1"
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
                       borderColor: theme.palette.divider,
                     },
-                    '&:hover fieldset': {
+                    "&:hover fieldset": {
                       borderColor: theme.palette.primary.main,
                     },
                   },
@@ -197,22 +197,25 @@ const RiskAssessment = () => {
                 variant="contained"
                 onClick={handleAssessRisk}
                 disabled={isAssessing || !entityId.trim()}
-                startIcon={isAssessing ? <CircularProgress size={20} /> : <Assessment />}
-                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-              >
-                {isAssessing ? 'Assessing...' : 'Assess Risk'}
+                startIcon={
+                  isAssessing ? <CircularProgress size={20} /> : <Assessment />
+                }
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200">
+                {isAssessing ? "Assessing..." : "Assess Risk"}
               </AnimatedButton>
             </Box>
 
-                         {entityId && (
-               <Alert severity="info" className="mt-4">
-                 <Typography variant="body2">
-                   Enter any entity ID to get a dynamic risk assessment. The system will generate different risk scores based on the entity ID.
-                 </Typography>
-               </Alert>
-             )}
-           </CardContent>
-         </StyledCard>
+            {entityId && (
+              <Alert severity="info" className="mt-4">
+                <Typography variant="body2">
+                  Enter any entity ID to get a dynamic risk assessment. The
+                  system will generate different risk scores based on the entity
+                  ID.
+                </Typography>
+              </Alert>
+            )}
+          </CardContent>
+        </StyledCard>
       </motion.div>
 
       {/* Assessment Results */}
@@ -220,15 +223,19 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+          transition={{ duration: 0.5, delay: 0.2 }}>
           <StyledCard variant="hover" className="p-6">
             <CardContent className="text-center">
-              <Typography variant="h6" className="font-semibold text-red-600 mb-4">
+              <Typography
+                variant="h6"
+                className="font-semibold text-red-600 mb-4">
                 No data on this entity in database
               </Typography>
-              <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
-                The entity ID "{entityId}" was not found in our database. Please enter a valid entity ID.
+              <Typography
+                variant="body2"
+                className="text-gray-600 dark:text-gray-400">
+                The entity ID "{entityId}" was not found in our database. Please
+                enter a valid entity ID.
               </Typography>
             </CardContent>
           </StyledCard>
@@ -240,22 +247,21 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+          transition={{ duration: 0.5, delay: 0.1 }}>
           <Alert severity="success" className="mb-4">
             <Typography variant="body2">
-              Entity "{riskData.entityId}" found and risk assessment completed successfully!
+              Entity "{riskData.entityId}" found and risk assessment completed
+              successfully!
             </Typography>
           </Alert>
         </motion.div>
       )}
 
-      {riskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+          transition={{ duration: 0.5, delay: 0.2 }}>
           <Grid container spacing={3}>
             {/* Risk Score Card */}
             <Grid item xs={12} md={4}>
@@ -263,7 +269,12 @@ const RiskAssessment = () => {
                 title="Overall Risk Score"
                 value={riskData.overallScore}
                 subtitle={`${getRiskLevel(riskData.overallScore)} Risk Level`}
-                icon={<Security className="text-black dark:text-white opacity-80" style={{ fontSize: 40 }} />}
+                icon={
+                  <Security
+                    className="text-black dark:text-white opacity-80"
+                    style={{ fontSize: 40 }}
+                  />
+                }
                 className="card-hover"
               />
             </Grid>
@@ -272,14 +283,18 @@ const RiskAssessment = () => {
             <Grid item xs={12} md={4}>
               <StyledCard variant="hover" className="p-6 h-full">
                 <CardContent className="text-center">
-                  <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                  <Typography
+                    variant="h6"
+                    className="font-semibold text-black dark:text-white mb-4">
                     Risk Level
                   </Typography>
-                  <RiskChip 
-                    level={getRiskLevelKey(riskData.overallScore)} 
+                  <RiskChip
+                    level={getRiskLevelKey(riskData.overallScore)}
                     score={riskData.overallScore}
                   />
-                  <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mt-2">
+                  <Typography
+                    variant="body2"
+                    className="text-gray-600 dark:text-gray-400 mt-2">
                     {getRiskLevel(riskData.overallScore)} Risk
                   </Typography>
                 </CardContent>
@@ -290,32 +305,37 @@ const RiskAssessment = () => {
             <Grid item xs={12} md={4}>
               <StyledCard variant="hover" className="p-6 h-full">
                 <CardContent>
-                  <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                  <Typography
+                    variant="h6"
+                    className="font-semibold text-black dark:text-white mb-4">
                     Entity Information
                   </Typography>
                   <Typography variant="body2" className="mb-2">
                     <strong>Entity ID:</strong> {riskData.entityId}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Name:</strong> {riskData.entityName || 'N/A'}
+                    <strong>Name:</strong> {riskData.entityName || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Type:</strong> {riskData.entityType || 'N/A'}
+                    <strong>Type:</strong> {riskData.entityType || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Department:</strong> {riskData.entityDepartment || 'N/A'}
+                    <strong>Department:</strong>{" "}
+                    {riskData.entityDepartment || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Email:</strong> {riskData.entityEmail || 'N/A'}
+                    <strong>Email:</strong> {riskData.entityEmail || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>IP Address:</strong> {riskData.entityIP || 'N/A'}
+                    <strong>IP Address:</strong> {riskData.entityIP || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Assessment Date:</strong> {new Date().toLocaleDateString()}
+                    <strong>Assessment Date:</strong>{" "}
+                    {new Date().toLocaleDateString()}
                   </Typography>
                   <Typography variant="body2">
-                    <strong>Assessment Time:</strong> {new Date().toLocaleTimeString()}
+                    <strong>Assessment Time:</strong>{" "}
+                    {new Date().toLocaleTimeString()}
                   </Typography>
                 </CardContent>
               </StyledCard>
@@ -325,19 +345,17 @@ const RiskAssessment = () => {
       )}
 
       {/* Detailed Assessment */}
-      {riskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+          transition={{ duration: 0.5, delay: 0.3 }}>
           <StyledCard variant="hover" className="p-6">
             <CardContent>
-              <Tabs 
-                value={selectedTab} 
+              <Tabs
+                value={selectedTab}
                 onChange={(e, newValue) => setSelectedTab(newValue)}
-                className="mb-6"
-              >
+                className="mb-6">
                 <Tab label="Risk Factors" icon={<Rule />} />
                 <Tab label="Activity History" icon={<Timeline />} />
                 <Tab label="Recommendations" icon={<CheckCircle />} />
@@ -350,9 +368,10 @@ const RiskAssessment = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                    transition={{ duration: 0.3 }}>
+                    <Typography
+                      variant="h6"
+                      className="font-semibold text-black dark:text-white mb-4">
                       Risk Factors Analysis
                     </Typography>
                     <Grid container spacing={2}>
@@ -361,35 +380,44 @@ const RiskAssessment = () => {
                           <StyledCard variant="hover" className="p-4">
                             <CardContent>
                               <Box className="flex justify-between items-start mb-2">
-                                <Typography variant="subtitle1" className="font-semibold text-black dark:text-white">
+                                <Typography
+                                  variant="subtitle1"
+                                  className="font-semibold text-black dark:text-white">
                                   {factor.name}
                                 </Typography>
-                                <Chip 
+                                <Chip
                                   label={`${factor.score} pts`}
                                   size="small"
-                                  sx={{ 
+                                  sx={{
                                     backgroundColor: getRiskColor(factor.score),
-                                    color: 'white',
-                                    fontWeight: 'bold'
+                                    color: "white",
+                                    fontWeight: "bold",
                                   }}
                                 />
                               </Box>
-                              <Typography variant="body2" className="text-gray-600 dark:text-gray-400 mb-2">
+                              <Typography
+                                variant="body2"
+                                className="text-gray-600 dark:text-gray-400 mb-2">
                                 {factor.description}
                               </Typography>
-                              <LinearProgress 
-                                variant="determinate" 
+                              <LinearProgress
+                                variant="determinate"
                                 value={(factor.score / 15) * 100}
                                 sx={{
                                   height: 8,
                                   borderRadius: 4,
-                                  backgroundColor: theme.palette.mode === 'dark' ? '#374151' : '#e5e7eb',
-                                  '& .MuiLinearProgress-bar': {
+                                  backgroundColor:
+                                    theme.palette.mode === "dark"
+                                      ? "#374151"
+                                      : "#e5e7eb",
+                                  "& .MuiLinearProgress-bar": {
                                     backgroundColor: getRiskColor(factor.score),
                                   },
                                 }}
                               />
-                              <Typography variant="caption" className="text-gray-500 dark:text-gray-400 mt-1 block">
+                              <Typography
+                                variant="caption"
+                                className="text-gray-500 dark:text-gray-400 mt-1 block">
                                 Weight: {(factor.weight * 100).toFixed(0)}%
                               </Typography>
                             </CardContent>
@@ -406,34 +434,40 @@ const RiskAssessment = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                    transition={{ duration: 0.3 }}>
+                    <Typography
+                      variant="h6"
+                      className="font-semibold text-black dark:text-white mb-4">
                       Recent Activity History
                     </Typography>
                     <List>
                       {riskData.history?.map((event, index) => (
-                        <ListItem key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                        <ListItem
+                          key={index}
+                          className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
                           <ListItemIcon>
-                            <Warning sx={{ color: getRiskColor(event.score) }} />
+                            <Warning
+                              sx={{ color: getRiskColor(event.score) }}
+                            />
                           </ListItemIcon>
                           <ListItemText
                             primary={event.event}
                             secondary={`${event.timestamp} • Risk Score: ${event.score}`}
                             primaryTypographyProps={{
-                              className: 'font-medium text-black dark:text-white'
+                              className:
+                                "font-medium text-black dark:text-white",
                             }}
                             secondaryTypographyProps={{
-                              className: 'text-gray-600 dark:text-gray-400'
+                              className: "text-gray-600 dark:text-gray-400",
                             }}
                           />
-                          <Chip 
+                          <Chip
                             label={`${event.score} pts`}
                             size="small"
-                            sx={{ 
+                            sx={{
                               backgroundColor: getRiskColor(event.score),
-                              color: 'white',
-                              fontWeight: 'bold'
+                              color: "white",
+                              fontWeight: "bold",
                             }}
                           />
                         </ListItem>
@@ -448,25 +482,30 @@ const RiskAssessment = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                    transition={{ duration: 0.3 }}>
+                    <Typography
+                      variant="h6"
+                      className="font-semibold text-black dark:text-white mb-4">
                       Security Recommendations
                     </Typography>
                     <List>
-                      {riskData.recommendations?.map((recommendation, index) => (
-                        <ListItem key={index} className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-                          <ListItemIcon>
-                            <CheckCircle sx={{ color: '#10b981' }} />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={recommendation}
-                            primaryTypographyProps={{
-                              className: 'text-black dark:text-white'
-                            }}
-                          />
-                        </ListItem>
-                      ))}
+                      {riskData.recommendations?.map(
+                        (recommendation, index) => (
+                          <ListItem
+                            key={index}
+                            className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                            <ListItemIcon>
+                              <CheckCircle sx={{ color: "#10b981" }} />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={recommendation}
+                              primaryTypographyProps={{
+                                className: "text-black dark:text-white",
+                              }}
+                            />
+                          </ListItem>
+                        )
+                      )}
                     </List>
                   </motion.div>
                 )}
@@ -481,10 +520,11 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-8"
-        >
+          className="text-center py-8">
           <CircularProgress size={60} />
-          <Typography variant="h6" className="mt-4 text-gray-600 dark:text-gray-400">
+          <Typography
+            variant="h6"
+            className="mt-4 text-gray-600 dark:text-gray-400">
             Analyzing entity risk...
           </Typography>
         </motion.div>
@@ -492,13 +532,11 @@ const RiskAssessment = () => {
 
       {/* Error State */}
       {!riskData && !isLoading && entityId && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <Alert severity="warning" className="mt-4">
             <Typography variant="body2">
-              Enter an entity ID and click "Assess Risk" to get started with the risk assessment.
+              Enter an entity ID and click "Assess Risk" to get started with the
+              risk assessment.
             </Typography>
           </Alert>
         </motion.div>
@@ -507,4 +545,4 @@ const RiskAssessment = () => {
   );
 };
 
-export default RiskAssessment; 
+export default RiskAssessment;
