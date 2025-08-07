@@ -81,7 +81,7 @@ const RiskAssessment = () => {
     }
 
     try {
-      // First check if entity exists in database
+      // First check if entity exists in Firebase database
       const entities = await apiService.getAllEntities();
       const entityExists = entities.some(entity => entity.id === entityId.trim());
       
@@ -91,9 +91,10 @@ const RiskAssessment = () => {
       }
 
       setIsAssessing(true);
-      assessRiskMutation.mutate(entityId);
+      assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
       toast.error('Failed to validate entity ID');
+      setIsAssessing(false);
     }
   };
 

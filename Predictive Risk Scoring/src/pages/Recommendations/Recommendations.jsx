@@ -73,8 +73,8 @@ const Recommendations = () => {
 
   const askAIMutation = useMutation(
     async (recommendation) => {
-      // Simulate AI response
-      const aiResponse = await apiService.getAIRecommendations('demo-entity', {
+      // Get AI recommendations using Gemini
+      const aiResponse = await apiService.getAIRecommendations('user-john.doe', {
         overallScore: 35,
         riskLevel: 'High',
         factors: recommendation.factors || []
@@ -403,9 +403,51 @@ const Recommendations = () => {
                 <Typography variant="h6" className="font-semibold">
                   AI Recommendations for: {selectedRecommendation.title}
                 </Typography>
-                {Array.isArray(selectedRecommendation.aiResponse) ? (
+                {selectedRecommendation.aiResponse?.recommendations ? (
+                  <>
+                    <Typography variant="body1" className="mb-4 text-gray-600 dark:text-gray-400">
+                      {selectedRecommendation.aiResponse.summary}
+                    </Typography>
+                    {selectedRecommendation.aiResponse.recommendations.map((rec, index) => (
+                      <Card key={index} className="p-4 mb-3">
+                        <Typography variant="subtitle1" className="font-semibold mb-2">
+                          {rec.title}
+                        </Typography>
+                        <Typography variant="body2" className="mb-3">
+                          {rec.description}
+                        </Typography>
+                        <Box className="flex gap-2 flex-wrap">
+                          <Chip 
+                            label={rec.priority} 
+                            sx={{
+                              backgroundColor: getPriorityColor(rec.priority),
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }}
+                            size="small"
+                          />
+                          <Chip 
+                            label={`Effort: ${rec.effort}`}
+                            variant="outlined"
+                            size="small"
+                          />
+                          <Chip 
+                            label={`Risk Reduction: ${rec.riskReduction}%`}
+                            color="success"
+                            size="small"
+                          />
+                          <Chip 
+                            label={`Timeline: ${rec.timeline}`}
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Box>
+                      </Card>
+                    ))}
+                  </>
+                ) : Array.isArray(selectedRecommendation.aiResponse) ? (
                   selectedRecommendation.aiResponse.map((rec, index) => (
-                    <Card key={index} className="p-4">
+                    <Card key={index} className="p-4 mb-3">
                       <Typography variant="subtitle1" className="font-semibold mb-2">
                         {rec.title || `Recommendation ${index + 1}`}
                       </Typography>
@@ -415,12 +457,16 @@ const Recommendations = () => {
                       <Box className="flex gap-2">
                         <Chip 
                           label={rec.priority || 'Medium'} 
-                          color={getPriorityColor(rec.priority || 'Medium')}
+                          sx={{
+                            backgroundColor: getPriorityColor(rec.priority || 'Medium'),
+                            color: 'white',
+                            fontWeight: 'bold'
+                          }}
                           size="small"
                         />
                         <Chip 
                           label={rec.effort || 'Medium'} 
-                          color="default"
+                          variant="outlined"
                           size="small"
                         />
                       </Box>
