@@ -72,7 +72,7 @@ const Analytics = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="space-y-6"
+      className="space-y-8"
     >
       {/* Header */}
       <motion.div
@@ -185,7 +185,7 @@ const Analytics = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <Grid container spacing={3} className="mb-6">
+        <Grid container spacing={4} className="mb-6">
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -278,7 +278,7 @@ const Analytics = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           <Grid item xs={12} md={3}>
             <Card>
               <CardContent className="text-center">

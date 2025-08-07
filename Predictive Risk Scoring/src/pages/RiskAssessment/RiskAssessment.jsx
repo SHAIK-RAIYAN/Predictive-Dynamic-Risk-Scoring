@@ -18,6 +18,11 @@ import {
   Tab,
   useTheme,
   CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Card,
+  CardActions,
 } from "@mui/material";
 import {
   Security,
@@ -29,6 +34,11 @@ import {
   Search,
   TrendingUp,
   BarChart,
+  ExpandMore,
+  Psychology,
+  Lightbulb,
+  Schedule,
+  PriorityHigh,
 } from "@mui/icons-material";
 import { useQuery, useMutation } from "react-query";
 import toast from "react-hot-toast";
@@ -48,6 +58,8 @@ const RiskAssessment = () => {
   const [entityId, setEntityId] = useState("");
   const [isAssessing, setIsAssessing] = useState(false);
   const [entityNotFound, setEntityNotFound] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const theme = useTheme();
 
   // Real API queries
@@ -67,10 +79,24 @@ const RiskAssessment = () => {
   const assessRiskMutation = useMutation(
     (entityId) => apiService.assessEntityRisk(entityId),
     {
-      onSuccess: () => {
+      onSuccess: async (data) => {
         toast.success("Risk assessment completed successfully");
         setIsAssessing(false);
         setEntityNotFound(false);
+        
+        // Get AI recommendations after successful assessment
+        try {
+          setIsLoadingAI(true);
+          const aiRecs = await apiService.getAIRecommendations(entityId, data);
+          setAiRecommendations(aiRecs);
+          toast.success("AI recommendations generated");
+        } catch (error) {
+          console.error("Error getting AI recommendations:", error);
+          toast.error("Failed to generate AI recommendations");
+        } finally {
+          setIsLoadingAI(false);
+        }
+        
         refetch();
       },
       onError: (error) => {
@@ -88,6 +114,7 @@ const RiskAssessment = () => {
 
     setIsAssessing(true);
     setEntityNotFound(false);
+    setAiRecommendations(null);
 
     try {
       // First check if entity exists in Firebase database
@@ -135,12 +162,30 @@ const RiskAssessment = () => {
     return "low";
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
+
+  const getEffortColor = (effort) => {
+    switch (effort?.toLowerCase()) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="space-y-6">
+      className="space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -165,7 +210,7 @@ const RiskAssessment = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}>
-        <StyledCard variant="hover" className="p-6">
+        <StyledCard variant="hover" className="p-6 mb-8">
           <CardContent>
             <Typography
               variant="h6"
@@ -210,7 +255,7 @@ const RiskAssessment = () => {
                 <Typography variant="body2">
                   Enter any entity ID to get a dynamic risk assessment. The
                   system will generate different risk scores based on the entity
-                  ID.
+                  ID and provide AI-powered recommendations.
                 </Typography>
               </Alert>
             )}
@@ -223,7 +268,8 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}>
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8">
           <StyledCard variant="hover" className="p-6">
             <CardContent className="text-center">
               <Typography
@@ -247,7 +293,8 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}>
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8">
           <Alert severity="success" className="mb-4">
             <Typography variant="body2">
               Entity "{riskData.entityId}" found and risk assessment completed
@@ -261,8 +308,9 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}>
-          <Grid container spacing={3}>
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8">
+          <Grid container spacing={4}>
             {/* Risk Score Card */}
             <Grid item xs={12} md={4}>
               <MetricCard
@@ -349,7 +397,8 @@ const RiskAssessment = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}>
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="mb-8">
           <StyledCard variant="hover" className="p-6">
             <CardContent>
               <Tabs
@@ -358,7 +407,8 @@ const RiskAssessment = () => {
                 className="mb-6">
                 <Tab label="Risk Factors" icon={<Rule />} />
                 <Tab label="Activity History" icon={<Timeline />} />
-                <Tab label="Recommendations" icon={<CheckCircle />} />
+                <Tab label="AI Recommendations" icon={<Psychology />} />
+                <Tab label="Basic Recommendations" icon={<CheckCircle />} />
               </Tabs>
 
               <AnimatePresence mode="wait">
@@ -374,7 +424,7 @@ const RiskAssessment = () => {
                       className="font-semibold text-black dark:text-white mb-4">
                       Risk Factors Analysis
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={3}>
                       {riskData.factors?.map((factor, index) => (
                         <Grid item xs={12} md={6} key={index}>
                           <StyledCard variant="hover" className="p-4">
@@ -478,7 +528,207 @@ const RiskAssessment = () => {
 
                 {selectedTab === 2 && (
                   <motion.div
-                    key="recommendations"
+                    key="ai-recommendations"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}>
+                    <Box className="flex items-center gap-2 mb-4">
+                      <Psychology className="text-blue-600" />
+                      <Typography
+                        variant="h6"
+                        className="font-semibold text-black dark:text-white">
+                        AI-Powered Security Recommendations
+                      </Typography>
+                      {isLoadingAI && <CircularProgress size={20} />}
+                    </Box>
+
+                    {aiRecommendations ? (
+                      <Box className="space-y-6">
+                        {/* Summary */}
+                        <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                          <CardContent>
+                            <Typography variant="h6" className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                              AI Analysis Summary
+                            </Typography>
+                            <Typography variant="body2" className="text-blue-700 dark:text-blue-300">
+                              {aiRecommendations.summary}
+                            </Typography>
+                            <Box className="flex gap-4 mt-3">
+                              <Chip
+                                label={`${aiRecommendations.overallRiskReduction}% Risk Reduction`}
+                                color="primary"
+                                variant="outlined"
+                              />
+                              <Chip
+                                label={`${aiRecommendations.recommendations?.length || 0} Recommendations`}
+                                color="secondary"
+                                variant="outlined"
+                              />
+                            </Box>
+                          </CardContent>
+                        </Card>
+
+                        {/* Recommendations */}
+                        <Typography variant="h6" className="font-semibold text-black dark:text-white mb-4">
+                          Detailed Recommendations
+                        </Typography>
+                        
+                        {aiRecommendations.recommendations?.map((rec, index) => (
+                          <Accordion key={index} className="mb-3">
+                            <AccordionSummary expandIcon={<ExpandMore />}>
+                              <Box className="flex items-center gap-3 w-full">
+                                <Lightbulb className="text-yellow-600" />
+                                <Box className="flex-1">
+                                  <Typography variant="subtitle1" className="font-semibold text-black dark:text-white">
+                                    {rec.title}
+                                  </Typography>
+                                  <Box className="flex gap-2 mt-1">
+                                    <Chip
+                                      label={rec.priority}
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: getPriorityColor(rec.priority),
+                                        color: "white",
+                                        fontWeight: "bold",
+                                      }}
+                                    />
+                                    <Chip
+                                      label={rec.effort}
+                                      size="small"
+                                      sx={{
+                                        backgroundColor: getEffortColor(rec.effort),
+                                        color: "white",
+                                        fontWeight: "bold",
+                                      }}
+                                    />
+                                    <Chip
+                                      label={`${rec.riskReduction}% reduction`}
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                    />
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Box className="space-y-4">
+                                <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                                  {rec.description}
+                                </Typography>
+                                
+                                <Box>
+                                  <Typography variant="subtitle2" className="font-semibold text-black dark:text-white mb-2">
+                                    Implementation Steps:
+                                  </Typography>
+                                  <List dense>
+                                    {rec.implementationSteps?.map((step, stepIndex) => (
+                                      <ListItem key={stepIndex} className="py-1">
+                                        <ListItemIcon>
+                                          <CheckCircle className="text-green-600" fontSize="small" />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                          primary={step}
+                                          primaryTypographyProps={{
+                                            className: "text-sm text-gray-700 dark:text-gray-300",
+                                          }}
+                                        />
+                                      </ListItem>
+                                    ))}
+                                  </List>
+                                </Box>
+
+                                <Box className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <Card variant="outlined">
+                                    <CardContent>
+                                      <Typography variant="subtitle2" className="font-semibold text-black dark:text-white mb-1">
+                                        Timeline
+                                      </Typography>
+                                      <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                                        {rec.timeline}
+                                      </Typography>
+                                    </CardContent>
+                                  </Card>
+                                  
+                                  <Card variant="outlined">
+                                    <CardContent>
+                                      <Typography variant="subtitle2" className="font-semibold text-black dark:text-white mb-1">
+                                        Category
+                                      </Typography>
+                                      <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                                        {rec.category}
+                                      </Typography>
+                                    </CardContent>
+                                  </Card>
+                                </Box>
+
+                                <Box>
+                                  <Typography variant="subtitle2" className="font-semibold text-black dark:text-white mb-1">
+                                    Potential Challenges:
+                                  </Typography>
+                                  <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                                    {rec.challenges}
+                                  </Typography>
+                                </Box>
+
+                                <Box>
+                                  <Typography variant="subtitle2" className="font-semibold text-black dark:text-white mb-1">
+                                    Expected Benefits:
+                                  </Typography>
+                                  <Typography variant="body2" className="text-gray-600 dark:text-gray-400">
+                                    {rec.benefits}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </AccordionDetails>
+                          </Accordion>
+                        ))}
+
+                        {/* Implementation Priority */}
+                        <Card className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                          <CardContent>
+                            <Typography variant="h6" className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                              Implementation Priority
+                            </Typography>
+                            <Typography variant="body2" className="text-green-700 dark:text-green-300">
+                              {aiRecommendations.implementationPriority}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+
+                        {/* Monitoring Recommendations */}
+                        <Card className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                          <CardContent>
+                            <Typography variant="h6" className="font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                              Monitoring Recommendations
+                            </Typography>
+                            <Typography variant="body2" className="text-purple-700 dark:text-purple-300">
+                              {aiRecommendations.monitoringRecommendations}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Box>
+                    ) : (
+                      <Box className="text-center py-8">
+                        <Psychology className="text-gray-400 mb-4" style={{ fontSize: 60 }} />
+                        <Typography variant="h6" className="text-gray-600 dark:text-gray-400 mb-2">
+                          AI Recommendations
+                        </Typography>
+                        <Typography variant="body2" className="text-gray-500 dark:text-gray-500">
+                          {isLoadingAI 
+                            ? "Generating AI-powered recommendations..." 
+                            : "AI recommendations will be generated after risk assessment"
+                          }
+                        </Typography>
+                      </Box>
+                    )}
+                  </motion.div>
+                )}
+
+                {selectedTab === 3 && (
+                  <motion.div
+                    key="basic-recommendations"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
@@ -486,7 +736,7 @@ const RiskAssessment = () => {
                     <Typography
                       variant="h6"
                       className="font-semibold text-black dark:text-white mb-4">
-                      Security Recommendations
+                      Basic Security Recommendations
                     </Typography>
                     <List>
                       {riskData.recommendations?.map(

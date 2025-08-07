@@ -214,7 +214,7 @@ const Dashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6 }}
-      className="space-y-6"
+      className="space-y-8"
     >
       {/* Header */}
       <motion.div
@@ -295,7 +295,7 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Grid container spacing={3} className="mb-8">
+        <Grid container spacing={4} className="mb-8">
           <Grid item xs={12} sm={6} md={3}>
             <MetricCard
               title="Overall Risk Score"
@@ -351,7 +351,7 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <Grid container spacing={3} className="mb-8">
+        <Grid container spacing={4} className="mb-8">
           {/* Risk Trend Chart */}
           <Grid item xs={12} md={6}>
             <StyledCard variant="hover" className="p-6">
@@ -426,7 +426,7 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.4 }}
       >
-        <Grid container spacing={3} className="mb-8">
+        <Grid container spacing={4} className="mb-8">
           <Grid item xs={12}>
             <StyledCard variant="hover" className="p-6">
               <CardHeader
