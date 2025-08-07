@@ -1,7 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+// Production configuration
+const productionConfig = {
+  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyDq4UeHyhxoeSpWrZBwvYEjQAdrwnFPgnk'
+};
 
 // Initialize Gemini API
-const genAI = new GoogleGenerativeAI('AIzaSyDq4UeHyhxoeSpWrZBwvYEjQAdrwnFPgnk'); // Replace with actual API key
+const genAI = new GoogleGenerativeAI(productionConfig.GEMINI_API_KEY);
 
 class GeminiService {
   constructor() {

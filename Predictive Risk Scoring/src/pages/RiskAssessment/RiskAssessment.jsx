@@ -60,6 +60,7 @@ const RiskAssessment = () => {
   const [entityNotFound, setEntityNotFound] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [currentRiskData, setCurrentRiskData] = useState(null);
   const theme = useTheme();
 
   // Real API queries
@@ -71,7 +72,7 @@ const RiskAssessment = () => {
     ["riskAssessment", entityId],
     () => apiService.assessEntityRisk(entityId),
     {
-      enabled: !!entityId,
+      enabled: !!entityId && !isAssessing, // Don't run query when we're manually assessing
       retry: false,
     }
   );
@@ -83,6 +84,7 @@ const RiskAssessment = () => {
         toast.success("Risk assessment completed successfully");
         setIsAssessing(false);
         setEntityNotFound(false);
+        setCurrentRiskData(data); // Store the risk data locally
         
         // Get AI recommendations after successful assessment
         try {
@@ -97,7 +99,8 @@ const RiskAssessment = () => {
           setIsLoadingAI(false);
         }
         
-        refetch();
+        // Don't call refetch here as it can cause re-renders that clear AI recommendations
+        // The data is already available from the mutation
       },
       onError: (error) => {
         toast.error("Risk assessment failed");
@@ -115,6 +118,7 @@ const RiskAssessment = () => {
     setIsAssessing(true);
     setEntityNotFound(false);
     setAiRecommendations(null);
+    setCurrentRiskData(null);
 
     try {
       // First check if entity exists in Firebase database
@@ -289,7 +293,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Success Message */}
-      {riskData && !entityNotFound && (
+      {(currentRiskData || riskData) && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -297,14 +301,14 @@ const RiskAssessment = () => {
           className="mb-8">
           <Alert severity="success" className="mb-4">
             <Typography variant="body2">
-              Entity "{riskData.entityId}" found and risk assessment completed
+              Entity "{(currentRiskData || riskData).entityId}" found and risk assessment completed
               successfully!
             </Typography>
           </Alert>
         </motion.div>
       )}
 
-      {riskData && !entityNotFound && (
+      {(currentRiskData || riskData) && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -315,8 +319,8 @@ const RiskAssessment = () => {
             <Grid item xs={12} md={4}>
               <MetricCard
                 title="Overall Risk Score"
-                value={riskData.overallScore}
-                subtitle={`${getRiskLevel(riskData.overallScore)} Risk Level`}
+                value={(currentRiskData || riskData).overallScore}
+                subtitle={`${getRiskLevel((currentRiskData || riskData).overallScore)} Risk Level`}
                 icon={
                   <Security
                     className="text-black dark:text-white opacity-80"
@@ -337,13 +341,13 @@ const RiskAssessment = () => {
                     Risk Level
                   </Typography>
                   <RiskChip
-                    level={getRiskLevelKey(riskData.overallScore)}
-                    score={riskData.overallScore}
+                    level={getRiskLevelKey((currentRiskData || riskData).overallScore)}
+                    score={(currentRiskData || riskData).overallScore}
                   />
                   <Typography
                     variant="body2"
                     className="text-gray-600 dark:text-gray-400 mt-2">
-                    {getRiskLevel(riskData.overallScore)} Risk
+                    {getRiskLevel((currentRiskData || riskData).overallScore)} Risk
                   </Typography>
                 </CardContent>
               </StyledCard>
@@ -359,23 +363,23 @@ const RiskAssessment = () => {
                     Entity Information
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Entity ID:</strong> {riskData.entityId}
+                    <strong>Entity ID:</strong> {(currentRiskData || riskData).entityId}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Name:</strong> {riskData.entityName || "N/A"}
+                    <strong>Name:</strong> {(currentRiskData || riskData).entityName || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Type:</strong> {riskData.entityType || "N/A"}
+                    <strong>Type:</strong> {(currentRiskData || riskData).entityType || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
                     <strong>Department:</strong>{" "}
-                    {riskData.entityDepartment || "N/A"}
+                    {(currentRiskData || riskData).entityDepartment || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>Email:</strong> {riskData.entityEmail || "N/A"}
+                    <strong>Email:</strong> {(currentRiskData || riskData).entityEmail || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
-                    <strong>IP Address:</strong> {riskData.entityIP || "N/A"}
+                    <strong>IP Address:</strong> {(currentRiskData || riskData).entityIP || "N/A"}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
                     <strong>Assessment Date:</strong>{" "}
@@ -393,7 +397,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Detailed Assessment */}
-      {riskData && !entityNotFound && (
+      {(currentRiskData || riskData) && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -425,7 +429,7 @@ const RiskAssessment = () => {
                       Risk Factors Analysis
                     </Typography>
                     <Grid container spacing={3}>
-                      {riskData.factors?.map((factor, index) => (
+                      {(currentRiskData || riskData).factors?.map((factor, index) => (
                         <Grid item xs={12} md={6} key={index}>
                           <StyledCard variant="hover" className="p-4">
                             <CardContent>
@@ -491,7 +495,7 @@ const RiskAssessment = () => {
                       Recent Activity History
                     </Typography>
                     <List>
-                      {riskData.history?.map((event, index) => (
+                      {(currentRiskData || riskData).history?.map((event, index) => (
                         <ListItem
                           key={index}
                           className="border-b border-gray-200 dark:border-gray-700 last:border-b-0">
@@ -739,7 +743,7 @@ const RiskAssessment = () => {
                       Basic Security Recommendations
                     </Typography>
                     <List>
-                      {riskData.recommendations?.map(
+                      {(currentRiskData || riskData).recommendations?.map(
                         (recommendation, index) => (
                           <ListItem
                             key={index}

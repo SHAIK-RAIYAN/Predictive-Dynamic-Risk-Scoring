@@ -1,25 +1,41 @@
 // API Service for connecting to Firebase and backend
 import firebaseService from './firebaseService';
 import geminiService from './geminiService';
+// Production configuration
+const productionConfig = {
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/risk',
+  MAX_RETRY_ATTEMPTS: 3,
+  API_TIMEOUT: 30000,
+  RATE_LIMIT_DELAY: 1000
+};
 
-const API_BASE_URL = 'http://localhost:8080/api/risk';
+const API_BASE_URL = productionConfig.API_BASE_URL;
 
 class ApiService {
   constructor() {
     this.baseUrl = API_BASE_URL;
   }
 
-  // Generic API call method
-  async apiCall(endpoint, options = {}) {
+  // Generic API call method with retry logic
+  async apiCall(endpoint, options = {}, retryCount = 0) {
+    const maxRetries = productionConfig.MAX_RETRY_ATTEMPTS;
+    
     try {
       const url = `${this.baseUrl}${endpoint}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), productionConfig.API_TIMEOUT);
+      
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
           ...options.headers,
         },
+        signal: controller.signal,
         ...options,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`API call failed: ${response.status} ${response.statusText}`);
@@ -27,7 +43,15 @@ class ApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('API call error:', error);
+      console.error(`API call error (attempt ${retryCount + 1}):`, error);
+      
+      // Retry logic for network errors
+      if (retryCount < maxRetries && (error.name === 'AbortError' || error.message.includes('fetch'))) {
+        console.log(`Retrying API call (${retryCount + 1}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, productionConfig.RATE_LIMIT_DELAY * (retryCount + 1)));
+        return this.apiCall(endpoint, options, retryCount + 1);
+      }
+      
       throw error;
     }
   }
