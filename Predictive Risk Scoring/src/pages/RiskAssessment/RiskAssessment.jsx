@@ -179,7 +179,6 @@ const RiskAssessment = () => {
                 label="Entity ID"
                 variant="outlined"
                 value={entityId}
-                onChange={(e) => setEntityId(e.target.value)}
                 placeholder="Enter entity ID (e.g., user-john.doe, server-prod-01)"
                 className="sm:flex-1"
                 sx={{
@@ -195,8 +194,12 @@ const RiskAssessment = () => {
               />
               <AnimatedButton
                 variant="contained"
-                onClick={handleAssessRisk}
-                disabled={isAssessing || !entityId.trim()}
+                onClick={() => {
+                  const inputValue = document.querySelector('input[placeholder*="entity ID"]').value;
+                  setEntityId(inputValue);
+                  handleAssessRisk();
+                }}
+                disabled={isAssessing}
                 startIcon={isAssessing ? <CircularProgress size={20} /> : <Assessment />}
                 className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
               >
@@ -236,7 +239,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Success Message */}
-      {riskData && !entityNotFound && (
+      {riskData && !entityNotFound && !isAssessing && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -250,7 +253,7 @@ const RiskAssessment = () => {
         </motion.div>
       )}
 
-      {riskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -325,7 +328,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Detailed Assessment */}
-      {riskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
