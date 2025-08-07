@@ -286,10 +286,16 @@ class FirebaseService {
   async getEntities() {
     try {
       const querySnapshot = await getDocs(collection(db, 'entities'));
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const entities = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          firestoreId: doc.id, // Keep the Firestore document ID
+          id: data.id, // Use the custom ID field
+          ...data
+        };
+      });
+      console.log('Retrieved entities from Firebase:', entities);
+      return entities;
     } catch (error) {
       console.error('Error getting entities:', error);
       return [];
@@ -299,10 +305,14 @@ class FirebaseService {
   // Subscribe to entities changes
   subscribeToEntities(callback) {
     return onSnapshot(collection(db, 'entities'), (snapshot) => {
-      const entities = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const entities = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          firestoreId: doc.id, // Keep the Firestore document ID
+          id: data.id, // Use the custom ID field
+          ...data
+        };
+      });
       callback(entities);
     });
   }
@@ -416,7 +426,11 @@ class FirebaseService {
   async assessEntityRisk(entityId) {
     try {
       const entities = await this.getEntities();
+      console.log('Firebase entities:', entities);
+      console.log('Looking for entity ID:', entityId);
+      
       const entity = entities.find(e => e.id === entityId);
+      console.log('Found entity:', entity);
       
       if (!entity) {
         throw new Error('Entity not found');
@@ -498,6 +512,11 @@ class FirebaseService {
 
       return {
         entityId: entity.id,
+        entityName: entity.name,
+        entityType: entity.type,
+        entityDepartment: entity.department,
+        entityEmail: entity.email,
+        entityIP: entity.ipAddress,
         overallScore: entity.riskScore,
         riskLevel: this.getRiskLevel(entity.riskScore),
         factors,
@@ -535,7 +554,15 @@ class FirebaseService {
   // Update entity
   async updateEntity(entityId, updateData) {
     try {
-      const entityRef = doc(db, 'entities', entityId);
+      // Find the entity by custom ID to get the Firestore document ID
+      const entities = await this.getEntities();
+      const entity = entities.find(e => e.id === entityId);
+      
+      if (!entity) {
+        throw new Error('Entity not found');
+      }
+      
+      const entityRef = doc(db, 'entities', entity.firestoreId);
       await updateDoc(entityRef, updateData);
     } catch (error) {
       console.error('Error updating entity:', error);
@@ -546,7 +573,15 @@ class FirebaseService {
   // Delete entity
   async deleteEntity(entityId) {
     try {
-      const entityRef = doc(db, 'entities', entityId);
+      // Find the entity by custom ID to get the Firestore document ID
+      const entities = await this.getEntities();
+      const entity = entities.find(e => e.id === entityId);
+      
+      if (!entity) {
+        throw new Error('Entity not found');
+      }
+      
+      const entityRef = doc(db, 'entities', entity.firestoreId);
       await deleteDoc(entityRef);
     } catch (error) {
       console.error('Error deleting entity:', error);

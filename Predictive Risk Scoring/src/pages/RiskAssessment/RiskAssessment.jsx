@@ -66,6 +66,7 @@ const RiskAssessment = () => {
       onSuccess: () => {
         toast.success('Risk assessment completed successfully');
         setIsAssessing(false);
+        setEntityNotFound(false);
         refetch();
       },
       onError: (error) => {
@@ -81,10 +82,17 @@ const RiskAssessment = () => {
       return;
     }
 
+    setIsAssessing(true);
+    setEntityNotFound(false);
+
     try {
       // First check if entity exists in Firebase database
       const entities = await apiService.getAllEntities();
+      console.log('All entities:', entities);
+      console.log('Searching for entity ID:', entityId.trim());
+      
       const entityExists = entities.some(entity => entity.id === entityId.trim());
+      console.log('Entity exists:', entityExists);
       
       if (!entityExists) {
         setEntityNotFound(true);
@@ -92,10 +100,10 @@ const RiskAssessment = () => {
         return;
       }
 
-      setEntityNotFound(false);
-      setIsAssessing(true);
+      // If entity exists, proceed with risk assessment
       assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
+      console.error('Error in handleAssessRisk:', error);
       toast.error('Failed to validate entity ID');
       setIsAssessing(false);
     }
@@ -227,6 +235,21 @@ const RiskAssessment = () => {
         </motion.div>
       )}
 
+      {/* Success Message */}
+      {riskData && !entityNotFound && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Alert severity="success" className="mb-4">
+            <Typography variant="body2">
+              Entity "{riskData.entityId}" found and risk assessment completed successfully!
+            </Typography>
+          </Alert>
+        </motion.div>
+      )}
+
       {riskData && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -272,6 +295,21 @@ const RiskAssessment = () => {
                   </Typography>
                   <Typography variant="body2" className="mb-2">
                     <strong>Entity ID:</strong> {riskData.entityId}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Name:</strong> {riskData.entityName || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Type:</strong> {riskData.entityType || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Department:</strong> {riskData.entityDepartment || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>Email:</strong> {riskData.entityEmail || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2" className="mb-2">
+                    <strong>IP Address:</strong> {riskData.entityIP || 'N/A'}
                   </Typography>
                   <Typography variant="body2" className="mb-2">
                     <strong>Assessment Date:</strong> {new Date().toLocaleDateString()}
