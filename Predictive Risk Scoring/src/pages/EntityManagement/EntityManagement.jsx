@@ -313,21 +313,6 @@ const EntityManagement = () => {
           </CardContent>
         </Card>
       </motion.div>
-                    <MenuItem key={status} value={status}>{status}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-              >
-                Add Entity
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      </motion.div>
 
       {/* Bulk Actions */}
       {selectedRows.length > 0 && (

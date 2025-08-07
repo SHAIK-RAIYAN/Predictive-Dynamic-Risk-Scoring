@@ -261,7 +261,7 @@ const Dashboard = () => {
               size="small" 
               variant="contained"
               className="ml-4 bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-            >
+             >
               View Details
             </AnimatedButton>
           </Box>

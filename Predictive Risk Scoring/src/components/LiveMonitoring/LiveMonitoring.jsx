@@ -25,7 +25,7 @@ import {
 import firebaseService from '../../services/firebaseService';
 
 const LiveMonitoring = () => {
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const [monitoringData, setMonitoringData] = useState(null);
   const [users, setUsers] = useState([]);
   const [events, setEvents] = useState([]);
