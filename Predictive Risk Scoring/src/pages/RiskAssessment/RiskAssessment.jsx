@@ -48,6 +48,7 @@ const RiskAssessment = () => {
   const [entityId, setEntityId] = useState('');
   const [isAssessing, setIsAssessing] = useState(false);
   const [entityNotFound, setEntityNotFound] = useState(false);
+  const [shouldShowRiskData, setShouldShowRiskData] = useState(false);
   const theme = useTheme();
 
   // Real API queries
@@ -55,7 +56,7 @@ const RiskAssessment = () => {
     ['riskAssessment', entityId],
     () => apiService.assessEntityRisk(entityId),
     {
-      enabled: !!entityId,
+      enabled: !!entityId && !entityNotFound,
       retry: false,
     }
   );
@@ -67,11 +68,13 @@ const RiskAssessment = () => {
         toast.success('Risk assessment completed successfully');
         setIsAssessing(false);
         setEntityNotFound(false);
+        setShouldShowRiskData(true);
         refetch();
       },
       onError: (error) => {
         toast.error('Risk assessment failed');
         setIsAssessing(false);
+        setEntityNotFound(true);
       },
     }
   );
@@ -84,6 +87,7 @@ const RiskAssessment = () => {
 
     setIsAssessing(true);
     setEntityNotFound(false);
+    setShouldShowRiskData(false);
 
     try {
       // First check if entity exists in Firebase database
@@ -97,10 +101,14 @@ const RiskAssessment = () => {
       if (!entityExists) {
         setEntityNotFound(true);
         setIsAssessing(false);
+        setShouldShowRiskData(false);
+        // Clear any existing risk data
+        setEntityId('');
         return;
       }
 
       // If entity exists, proceed with risk assessment
+      setShouldShowRiskData(true);
       assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
       console.error('Error in handleAssessRisk:', error);
@@ -239,7 +247,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Success Message */}
-      {riskData && !entityNotFound && !isAssessing && (
+      {riskData && shouldShowRiskData && !isAssessing && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -253,7 +261,7 @@ const RiskAssessment = () => {
         </motion.div>
       )}
 
-      {riskData && !entityNotFound && (
+      {riskData && shouldShowRiskData && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -328,7 +336,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Detailed Assessment */}
-      {riskData && !entityNotFound && (
+      {riskData && shouldShowRiskData && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
