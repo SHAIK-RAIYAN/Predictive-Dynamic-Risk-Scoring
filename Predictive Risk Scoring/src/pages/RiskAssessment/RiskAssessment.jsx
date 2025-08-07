@@ -48,7 +48,6 @@ const RiskAssessment = () => {
   const [entityId, setEntityId] = useState("");
   const [isAssessing, setIsAssessing] = useState(false);
   const [entityNotFound, setEntityNotFound] = useState(false);
-  const [shouldShowRiskData, setShouldShowRiskData] = useState(false);
   const theme = useTheme();
 
   // Real API queries
@@ -60,7 +59,7 @@ const RiskAssessment = () => {
     ["riskAssessment", entityId],
     () => apiService.assessEntityRisk(entityId),
     {
-      enabled: !!entityId && !entityNotFound,
+      enabled: !!entityId,
       retry: false,
     }
   );
@@ -72,13 +71,11 @@ const RiskAssessment = () => {
         toast.success("Risk assessment completed successfully");
         setIsAssessing(false);
         setEntityNotFound(false);
-        setShouldShowRiskData(true);
         refetch();
       },
       onError: (error) => {
         toast.error("Risk assessment failed");
         setIsAssessing(false);
-        setEntityNotFound(true);
       },
     }
   );
@@ -91,7 +88,6 @@ const RiskAssessment = () => {
 
     setIsAssessing(true);
     setEntityNotFound(false);
-    setShouldShowRiskData(false);
 
     try {
       // First check if entity exists in Firebase database
@@ -107,14 +103,10 @@ const RiskAssessment = () => {
       if (!entityExists) {
         setEntityNotFound(true);
         setIsAssessing(false);
-        setShouldShowRiskData(false);
-        // Clear any existing risk data
-        setEntityId('');
         return;
       }
 
       // If entity exists, proceed with risk assessment
-      setShouldShowRiskData(true);
       assessRiskMutation.mutate(entityId.trim());
     } catch (error) {
       console.error("Error in handleAssessRisk:", error);
@@ -187,6 +179,7 @@ const RiskAssessment = () => {
                 label="Entity ID"
                 variant="outlined"
                 value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
                 placeholder="Enter entity ID (e.g., user-john.doe, server-prod-01)"
                 className="sm:flex-1"
                 sx={{
@@ -202,16 +195,13 @@ const RiskAssessment = () => {
               />
               <AnimatedButton
                 variant="contained"
-                onClick={() => {
-                  const inputValue = document.querySelector('input[placeholder*="entity ID"]').value;
-                  setEntityId(inputValue);
-                  handleAssessRisk();
-                }}
-                disabled={isAssessing}
-                startIcon={isAssessing ? <CircularProgress size={20} /> : <Assessment />}
-                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
-              >
-                {isAssessing ? 'Assessing...' : 'Assess Risk'}
+                onClick={handleAssessRisk}
+                disabled={isAssessing || !entityId.trim()}
+                startIcon={
+                  isAssessing ? <CircularProgress size={20} /> : <Assessment />
+                }
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200">
+                {isAssessing ? "Assessing..." : "Assess Risk"}
               </AnimatedButton>
             </Box>
 
@@ -253,7 +243,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Success Message */}
-      {riskData && shouldShowRiskData && !isAssessing && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -267,7 +257,7 @@ const RiskAssessment = () => {
         </motion.div>
       )}
 
-      {riskData && shouldShowRiskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -355,7 +345,7 @@ const RiskAssessment = () => {
       )}
 
       {/* Detailed Assessment */}
-      {riskData && shouldShowRiskData && (
+      {riskData && !entityNotFound && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
