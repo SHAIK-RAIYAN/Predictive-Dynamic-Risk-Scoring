@@ -319,6 +319,6 @@ For hackathon support or questions:
 
 ---
 
-**Built with ❤️ for the National Hackathon 2024**
+**Built with ❤️ for the National Hackathon 2025**
 
 *This platform demonstrates the power of Java in cybersecurity applications, combining traditional rule-based systems with modern machine learning techniques to create a comprehensive risk assessment solution.* 
